@@ -341,7 +341,14 @@ Refund (Image 4 inspired):
 
 ## Fixes (Later)
 - Dark/Light theme settings (toggle + persistence)
-- Machine translation (languages / product descriptions)
+- Machine translation (languages / product descriptions) : https://huggingface.co/google/madlad400-3b-mt      / license apache 2.0 ( can be used in commercial )
+          Use-case: Translate product content (labels, short descriptions, website descriptions) from Lithuanian (LT) to English (EN) or vice versa.
+
+        Recommended approach:
+        - Batch/offline translation (not realtime) to avoid latency in POS/admin.
+        - Run locally during data prep/import or as a scheduled job.
+        - Store results in dedicated EN fields (e.g., name_en, sales_description_en, website_description_en).
+
 - AJAX search (no full page reload)
 - Pagination / infinite scroll
 - Direct ESC/POS printing integration

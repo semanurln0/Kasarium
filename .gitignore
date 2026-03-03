@@ -5,6 +5,9 @@ secrets/*.env
 **/*.db
 data/**/backups/
 
+# Phase 1 pipeline outputs (generated; do not commit)
+data/
+
 # Python
 __pycache__/
 *.pyc
