@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Delete Template{% endblock %}
+{% block content %}
+<div class="card" style="max-width:500px">
+  <h2>Delete "{{ object.name }}"?</h2>
+  <form method="post">{% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a href="{% url 'pos:receipt_list' %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

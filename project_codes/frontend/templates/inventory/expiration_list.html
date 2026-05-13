@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Expiration Control — Kasarium{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Expiration Control</h2>
+  <form method="get" style="margin-bottom:1rem;display:flex;gap:.5rem;flex-wrap:wrap">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search by barcode or name…" style="width:auto;flex:1">
+    <select name="sort" style="width:auto">
+      <option value="nearest" {% if sort == "nearest" %}selected{% endif %}>Nearest expiration</option>
+      <option value="latest" {% if sort == "latest" %}selected{% endif %}>Latest expiration</option>
+      <option value="alpha" {% if sort == "alpha" %}selected{% endif %}>Alphabetic product</option>
+    </select>
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if q or sort %}<a href="{% url 'inventory:expiration_list' %}" class="btn btn-secondary">Clear</a>{% endif %}
+  </form>
+  <table>
+    <thead><tr><th>Product</th><th>Barcode</th><th>Expiration Date</th><th>Raw Value</th><th>Source</th></tr></thead>
+    <tbody>
+    {% for p in products %}
+    <tr {% if p.expiration_tone == 'expired' %}style="background:#ffe5e5"{% elif p.expiration_tone == 'warning' %}style="background:#fff7df"{% endif %}>
+      <td>{{ p.name }}</td>
+      <td>{{ p.barcode }}</td>
+      <td>{{ p.effective_expiration_value|default:p.effective_expiration_date|default:"—" }}</td>
+      <td>{{ p.effective_raw_value|default:"—" }}</td>
+      <td>{% if p.default_expiration_date %}product{% else %}{{ p.effective_source|default:"—" }}{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">No expiration entries found.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if is_paginated %}
+  <div style="margin-top:1rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+    {% if page_obj.has_previous %}<a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-secondary">← Prev</a>{% endif %}
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    {% if page_obj.has_next %}<a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-secondary">Next →</a>{% endif %}
+    <form method="get" style="display:flex;gap:.4rem;align-items:center;margin-left:auto">
+      {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+      {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+      <label for="jump-page" style="margin:0">Jump:</label>
+      <input id="jump-page" type="number" name="page" min="1" max="{{ page_obj.paginator.num_pages }}" style="width:100px">
+      <button class="btn btn-secondary" type="submit">Go</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

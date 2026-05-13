@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Receipt — Sale #{{ sale.pk }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:500px;margin:auto">
+  <h2 style="text-align:center">Receipt</h2>
+  <p style="text-align:center">Sale #{{ sale.pk }} | {{ sale.created_at }}</p>
+  <table>
+    <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+    <tbody>
+    {% for line in sale.lines.all %}
+    <tr>
+      <td>{{ line.name_snapshot }}</td>
+      <td>{{ line.qty }}</td>
+      <td>€{{ line.unit_price }}</td>
+      <td>€{{ line.line_total }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="3"><strong>Total</strong></td><td><strong>€{{ sale.total }}</strong></td></tr>
+    </tfoot>
+  </table>
+  {% for p in sale.payments.all %}
+  <p>Paid via {{ p.method }}: €{{ p.amount }}</p>
+  {% endfor %}
+  <div style="text-align:center;margin-top:1rem">
+    <a href="{% url 'pos:session_open' %}" class="btn btn-primary">New Sale</a>
+  </div>
+</div>
+{% endblock %}

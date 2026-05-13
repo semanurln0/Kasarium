@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Customer Messages — Kasarium{% endblock %}
+{% block content %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:1rem">
+    <h2 style="margin:0">Customer Messages</h2>
+    <a href="{% url 'shop:admin_message_new' %}" class="btn btn-primary">+ New Message to Customer</a>
+  </div>
+  <table>
+    <thead><tr><th>From</th><th>To</th><th>Subject</th><th>Date</th><th>Read</th><th></th><th></th></tr></thead>
+    <tbody>
+      {% for msg in contact_messages %}
+      <tr style="{% if not msg.is_read %}font-weight:bold{% endif %}">
+        <td>{{ msg.sent_by.email|default:'Customer' }}</td>
+        <td>{{ msg.user.email }}</td>
+        <td>{{ msg.subject }}</td>
+        <td>{{ msg.created_at|date:"d M Y H:i" }}</td>
+        <td>{% if msg.is_read %}✓{% else %}🔵 New{% endif %}</td>
+        <td><a href="{% url 'shop:admin_message_detail' msg.pk %}" class="btn btn-secondary">View</a></td>
+        <td>
+          <form method="post" action="{% url 'shop:admin_message_detail' msg.pk %}" style="display:inline" onsubmit="return confirm('Hide this message for staff?')">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <button type="submit" class="btn btn-danger" style="padding:.2rem .5rem">✕</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">No messages yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if is_paginated %}
+  <div style="margin-top:1rem">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary">← Prev</a>{% endif %}
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

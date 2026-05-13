@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Preview: {{ tmpl.name }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Preview: {{ tmpl.name }}</h2>
+  <div style="border:1px solid #ccc;padding:1rem;max-width:{{ tmpl.paper_width }}mm;margin:auto;font-family:monospace;font-size:.85rem;white-space:pre-wrap">
+{{ tmpl.header }}
+
+--------------------------------
+Item            Qty   Price
+--------------------------------
+Sample Item 1     1   €9.99
+Sample Item 2     2   €4.99
+--------------------------------
+TOTAL                €19.97
+--------------------------------
+Paid via cash: €19.97
+
+{{ tmpl.footer }}
+  </div>
+  <div style="margin-top:1rem">
+    <a href="{% url 'pos:receipt_list' %}" class="btn btn-secondary">Back</a>
+    <a href="{% url 'pos:receipt_update' tmpl.pk %}" class="btn btn-primary">Edit</a>
+  </div>
+</div>
+{% endblock %}

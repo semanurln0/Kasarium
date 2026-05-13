@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Delete Message{% endblock %}
+{% block content %}
+<div class="card" style="max-width:500px">
+  <h2>Delete "{{ object.title }}"?</h2>
+  <form method="post">{% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a href="{% url 'pos_messages:message_list' %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Message from {{ msg.user.email }} — Kasarium{% endblock %}
+{% block content %}
+<div class="card" style="max-width:700px">
+  <a href="{% url 'shop:admin_message_list' %}" class="btn btn-secondary" style="margin-bottom:1rem">← Back to Messages</a>
+  <h2>Message from {{ msg.user.email }}</h2>
+  <p><strong>Subject:</strong> {{ msg.subject }}</p>
+  <p><strong>Date:</strong> {{ msg.created_at|date:"d M Y H:i" }}</p>
+  <hr>
+  <p style="white-space:pre-wrap">{{ msg.body }}</p>
+  {% if msg.customer_reply %}
+  <div class="card" style="background:var(--surface);border:1px solid #ddd;margin-top:1rem">
+    <strong>Customer reply{% if msg.customer_replied_at %} on {{ msg.customer_replied_at|date:"d M Y H:i" }}{% endif %}</strong>
+    <p style="white-space:pre-wrap;margin-top:.5rem">{{ msg.customer_reply }}</p>
+  </div>
+  {% endif %}
+
+  <hr>
+  <h3>Reply</h3>
+  {% if msg.reply %}
+    <div class="card" style="background:var(--surface);border:1px solid #ddd;margin-bottom:1rem">
+      <strong>Reply sent{% if msg.replied_at %} on {{ msg.replied_at|date:"d M Y H:i" }}{% endif %}</strong>
+      <p style="white-space:pre-wrap;margin-top:.5rem">{{ msg.reply }}</p>
+    </div>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn btn-accent" type="submit">Send reply</button>
+  </form>
+
+  <hr>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    <form method="post" style="display:inline" onsubmit="return confirm('Hide this message for staff?')">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete">
+      <button class="btn btn-danger" type="submit">Hide for staff</button>
+    </form>
+    <a href="{% url 'shop:admin_message_list' %}" class="btn btn-secondary">Back to Messages</a>
+  </div>
+</div>
+{% endblock %}

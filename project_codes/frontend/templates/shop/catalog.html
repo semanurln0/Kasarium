@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Shop — Kasarium{% endblock %}
+{% block content %}
+<div class="shop-banner-top">Open {{ site_work_hours|default:'Mon-Sat 08:00-20:00' }}</div>
+<div style="display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:1rem" class="shop-layout">
+<div class="card">
+  <h2>Shop</h2>
+
+  <!-- Search + filter -->
+  <form id="shop-search-form" method="get" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+    <input name="q" value="{{ q }}" placeholder="Search products…" style="width:auto;flex:1">
+    <select name="cat" style="width:auto">
+      <option value="">All Categories</option>
+      {% for cat in categories %}
+      <option value="{{ cat.pk }}" {% if selected_cat == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="sort" style="width:auto">
+      <option value="name_asc" {% if sort == "name_asc" %}selected{% endif %}>Name A-Z</option>
+      <option value="name_desc" {% if sort == "name_desc" %}selected{% endif %}>Name Z-A</option>
+      <option value="price_asc" {% if sort == "price_asc" %}selected{% endif %}>Price low-high</option>
+      <option value="price_desc" {% if sort == "price_desc" %}selected{% endif %}>Price high-low</option>
+    </select>
+    <select name="view" style="width:auto">
+      <option value="grid" {% if view_mode == "grid" %}selected{% endif %}>Grid view</option>
+      <option value="table" {% if view_mode == "table" %}selected{% endif %}>Table view</option>
+    </select>
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if q or selected_cat %}<a href="/shop/" class="btn btn-secondary">Clear</a>{% endif %}
+  </form>
+
+  <div id="product-grid" aria-live="polite">
+    {% include "shop/_product_grid.html" %}
+  </div>
+
+  <!-- skeleton placeholder used during AJAX fetches -->
+  <template id="product-skeleton">
+    <div class="product-grid">
+      {% for i in "123456" %}
+      <div class="product-card">
+        <div class="product-image skeleton" aria-hidden="true"></div>
+        <h3 style="margin:0 0 .4rem;font-size:1rem"><span class="skeleton" style="display:block;height:18px;width:70%"></span></h3>
+        <div class="product-meta"><span class="skeleton" style="display:block;height:12px;width:40%"></span></div>
+        <div class="product-bottom">
+          <div class="product-price"><span class="skeleton" style="display:inline-block;height:18px;width:40px"></span></div>
+          <div style="margin-left:auto"><span class="skeleton" style="display:inline-block;height:32px;width:60px;border-radius:6px"></span></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </template>
+
+  <div class="shop-banner-bottom">
+    Need help with an order?
+    <a href="tel:{{ site_contact_phone|default:'+370 600 00000' }}"><strong>{{ site_contact_phone|default:'+370 600 00000' }}</strong></a>
+    or <a href="mailto:{{ site_contact_email|default:'contact@kasarium.local' }}"><strong>{{ site_contact_email|default:'contact@kasarium.local' }}</strong></a>
+    •
+    <a href="https://www.google.com/maps/search/?api=1&query={{ site_contact_address|default:'Main Street 10, Vilnius, Lithuania'|urlencode }}" target="_blank" rel="noopener">Open address in maps</a>
+  </div>
+
+  <script>
+  (function(){
+    function ajaxFetch(url){
+      return fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ if(!r.ok) throw new Error('Network error'); return r.json(); });
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+        var form = document.getElementById('shop-search-form');
+        form.addEventListener('submit', function(e){
+          e.preventDefault();
+          var params = new URLSearchParams(new FormData(form));
+          var url = '/shop/ajax/catalog/?' + params.toString();
+          // show skeleton
+          var tpl = document.getElementById('product-skeleton');
+          if(tpl) document.getElementById('product-grid').innerHTML = tpl.innerHTML;
+          ajaxFetch(url).then(function(data){
+            document.getElementById('product-grid').innerHTML = data.html;
+            try{ history.pushState({}, '', '/shop/?' + params.toString()); }catch(_e){}
+          }).catch(function(){ /* ignore */ });
+        });
+
+      // Delegated click handler for AJAX pagination links
+      document.body.addEventListener('click', function(e){
+        var el = e.target;
+        if(el.matches && el.matches('a.ajax-page')){
+          e.preventDefault();
+          var href = el.getAttribute('href');
+          var tpl = document.getElementById('product-skeleton');
+          if(tpl) document.getElementById('product-grid').innerHTML = tpl.innerHTML;
+          ajaxFetch(href).then(function(data){
+            document.getElementById('product-grid').innerHTML = data.html;
+            // update history
+            try{ history.pushState({}, '', href); }catch(_e){}
+          }).catch(function(){ /* ignore */ });
+        }
+      });
+
+      window.addEventListener('popstate', function(){
+        var params = new URLSearchParams(window.location.search);
+        var url = '/shop/ajax/catalog/?' + params.toString();
+        ajaxFetch(url).then(function(data){
+          document.getElementById('product-grid').innerHTML = data.html;
+        }).catch(function(){});
+      });
+    });
+  })();
+  </script>
+</div>
+
+<aside class="card" id="catalog-cart-sidebar" style="position:sticky;top:76px;height:fit-content">
+  <h3 style="margin-top:0">Your Cart</h3>
+  <div id="catalog-cart-items" class="product-meta">Loading cart...</div>
+  <div style="display:flex;justify-content:space-between;margin-top:.75rem">
+    <strong>Total</strong>
+    <strong id="catalog-cart-total">0.00 €</strong>
+  </div>
+  <div style="display:flex;gap:.5rem;margin-top:.75rem">
+    <a href="{% url 'shop:cart' %}" class="btn btn-secondary" style="flex:1">Full Cart</a>
+    <a href="{% url 'shop:checkout' %}" class="btn btn-primary" style="flex:1">Checkout</a>
+  </div>
+</aside>
+</div>
+
+<script>
+(function(){
+  var itemsBox = document.getElementById('catalog-cart-items');
+  var totalBox = document.getElementById('catalog-cart-total');
+  if(!itemsBox || !totalBox) return;
+
+  function csrf(){
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+  }
+
+  function loadCart(){
+    fetch('/shop/cart/summary/', {headers:{'X-Requested-With':'XMLHttpRequest'}})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(!data.items || !data.items.length){
+          itemsBox.innerHTML = '<p class="product-meta">Cart is empty.</p>';
+          totalBox.textContent = (data.total || '0.00') + ' €';
+          return;
+        }
+        itemsBox.innerHTML = data.items.map(function(item){
+          return (
+            '<div style="border-bottom:1px solid #ddd;padding:.5rem 0">' +
+            '<div style="font-weight:600">' + item.name + '</div>' +
+            '<div class="product-meta">' + (item.sales_description || '—') + ' • ' + item.price + ' €</div>' +
+            '<div style="display:flex;gap:.35rem;align-items:center;margin-top:.3rem">' +
+            '<input type="number" min="0" value="' + item.qty + '" data-pid="' + item.id + '" class="sidebar-qty" style="width:68px">' +
+            '<button class="btn btn-danger sidebar-remove" data-pid="' + item.id + '" style="padding:.2rem .45rem">✕</button>' +
+            '</div>' +
+            '</div>'
+          );
+        }).join('');
+        totalBox.textContent = (data.total || '0.00') + ' €';
+      });
+  }
+
+  function setQty(pid, qty){
+    var fd = new FormData();
+    fd.append('csrfmiddlewaretoken', csrf());
+    document.querySelectorAll('.sidebar-qty').forEach(function(el){
+      var p = el.getAttribute('data-pid');
+      fd.append('qty_' + p, p === pid ? String(qty) : String(el.value || 0));
+    });
+    fetch('/shop/cart/update/', {method:'POST', body:fd, headers:{'X-CSRFToken': csrf()}})
+      .then(function(){ loadCart(); });
+  }
+
+  function removePid(pid){
+    fetch('/shop/cart/remove/' + pid + '/', {method:'POST', headers:{'X-CSRFToken': csrf()}})
+      .then(function(){ loadCart(); });
+  }
+
+  document.addEventListener('change', function(e){
+    if(e.target.classList.contains('sidebar-qty')){
+      setQty(e.target.getAttribute('data-pid'), Number(e.target.value || 0));
+    }
+  });
+
+  document.addEventListener('click', function(e){
+    if(e.target.classList.contains('sidebar-remove')){
+      e.preventDefault();
+      removePid(e.target.getAttribute('data-pid'));
+    }
+  });
+
+  loadCart();
+})();
+</script>
+
+<style>
+@media (max-width: 980px){
+  .shop-layout{grid-template-columns:1fr !important}
+}
+</style>
+{% endblock %}

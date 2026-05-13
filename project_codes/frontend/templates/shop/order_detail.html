@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.pk }} — Kasarium{% endblock %}
+{% block content %}
+<div class="card">
+  <a href="/shop/orders/" class="btn btn-secondary" style="margin-bottom:1rem">← Back to Orders</a>
+  <h2>Order #{{ order.pk }}</h2>
+  <p><strong>Date:</strong> {{ order.created_at|date:"d M Y H:i" }}</p>
+  <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+  <p><strong>Payment:</strong> {{ order.get_payment_method_display }}</p>
+  {% if order.shipping_address %}<p><strong>Shipping address:</strong> {{ order.shipping_address }}</p>{% endif %}
+  {% if order.shipping_phone %}<p><strong>Shipping phone:</strong> {{ order.shipping_phone }}</p>{% endif %}
+  {% if order.need_invoice %}<p><strong>Invoice:</strong> {{ order.invoice_company_name }}{% if order.invoice_tax_id %} (Tax ID: {{ order.invoice_tax_id }}){% endif %}</p>{% endif %}
+  {% if order.notes %}<p><strong>Notes:</strong> {{ order.notes }}</p>{% endif %}
+
+  <h3>Items</h3>
+  <table>
+    <thead><tr><th>Product</th><th>Sales Description</th><th>Expiration</th><th>Barcode</th><th>Unit Price</th><th>Qty</th><th>Subtotal</th></tr></thead>
+    <tbody>
+      {% for line in order.lines.all %}
+      <tr>
+        <td>{{ line.name_snapshot }}</td>
+        <td>{{ line.sales_description_snapshot|default:"—" }}</td>
+        <td>{{ line.expiration_date_snapshot|default:"—" }}</td>
+        <td>{{ line.barcode_snapshot|default:"—" }}</td>
+        <td>{{ line.unit_price }} €</td>
+        <td>{{ line.qty }}</td>
+        <td>{{ line.line_total }} €</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="4"><strong>Products total</strong></td><td colspan="3"><strong>{{ order.total }} €</strong></td></tr>
+      <tr><td colspan="4"><strong>Courier</strong></td><td colspan="3"><strong>{{ order.shipping_price }} €</strong></td></tr>
+      <tr><td colspan="4"><strong>Grand total</strong></td><td colspan="3"><strong>{{ order.grand_total }} €</strong></td></tr>
+    </tfoot>
+  </table>
+  
+  <div style="margin-top:1.5rem;display:flex;gap:.5rem;flex-wrap:wrap">
+    <a href="/shop/orders/" class="btn btn-secondary">Back to Orders</a>
+    {% if order.can_cancel %}
+    <form method="post" action="/shop/orders/{{ order.pk }}/delete/" onsubmit="return confirm('Cancel this order?')" style="display:inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Cancel Order</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

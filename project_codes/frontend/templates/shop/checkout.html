@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Checkout — Kasarium{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Checkout</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem" class="checkout-grid">
+    <div>
+      <h3>Order Summary</h3>
+      <table>
+        <thead><tr><th>Product</th><th>Qty</th><th>Subtotal</th></tr></thead>
+        <tbody>
+          {% for item in items %}
+          <tr><td>{{ item.name }}</td><td>{{ item.qty }}</td><td>{{ item.subtotal }} €</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><td colspan="2"><strong>Products total</strong></td><td><strong>{{ total }} €</strong></td></tr>
+          <tr><td colspan="2"><strong>Courier</strong></td><td><strong>{{ shipping_price }} €</strong></td></tr>
+          <tr><td colspan="2"><strong>Grand total</strong></td><td><strong>{{ grand_total }} €</strong></td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div>
+      <h3>Shipping & Payment</h3>
+      <form method="post" id="checkout-form">
+        {% csrf_token %}
+
+        {% if outside_work_hours %}
+        <div class="btn btn-warning" style="display:block;margin-bottom:1rem;white-space:normal;text-align:left">
+          The shop is currently outside working hours. Orders will be delivered during the next available working window.
+        </div>
+        {% endif %}
+
+        <div class="card" style="margin-bottom:1rem">
+          <h4 style="margin-top:0">Shipping Address</h4>
+          <div class="form-group">
+            <label>{{ form.saved_shipping_address.label }}</label>
+            {{ form.saved_shipping_address }}
+          </div>
+          <div id="shipping-manual-fields">
+            <div class="form-group"><label>{{ form.shipping_phone.label }}</label>{{ form.shipping_phone }}{% if form.shipping_phone.errors %}<ul class="errorlist">{% for e in form.shipping_phone.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+            <div class="form-group"><label>{{ form.shipping_street_address.label }}</label>{{ form.shipping_street_address }}{% if form.shipping_street_address.errors %}<ul class="errorlist">{% for e in form.shipping_street_address.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+            <div class="form-group"><label>{{ form.shipping_district.label }}</label>{{ form.shipping_district }}</div>
+            <div class="form-group"><label>{{ form.shipping_city.label }}</label>{{ form.shipping_city }}{% if form.shipping_city.errors %}<ul class="errorlist">{% for e in form.shipping_city.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+            <div class="form-group"><label>{{ form.shipping_state_region.label }}</label>{{ form.shipping_state_region }}</div>
+            <div class="form-group"><label>{{ form.shipping_postal_code.label }}</label>{{ form.shipping_postal_code }}{% if form.shipping_postal_code.errors %}<ul class="errorlist">{% for e in form.shipping_postal_code.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+            <div class="form-group"><label>{{ form.shipping_country.label }}</label>{{ form.shipping_country }}{% if form.shipping_country.errors %}<ul class="errorlist">{% for e in form.shipping_country.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+            <div class="form-group">{{ form.save_shipping_address }} <label for="id_save_shipping_address" style="display:inline;font-weight:400">Save this address</label></div>
+            <div class="form-group" id="shipping-title-wrap" style="display:none"><label>{{ form.shipping_address_title.label }}</label>{{ form.shipping_address_title }}{% if form.shipping_address_title.errors %}<ul class="errorlist">{% for e in form.shipping_address_title.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1rem">
+          <h4 style="margin-top:0">Invoice Details (Lithuania)</h4>
+          <div class="form-group">{{ form.need_invoice }} <label for="id_need_invoice" style="display:inline;font-weight:400">I need an invoice</label></div>
+          <div id="invoice-fields" style="display:none">
+            <div class="form-group"><label>{{ form.saved_invoice_profile.label }}</label>{{ form.saved_invoice_profile }}</div>
+            <div id="invoice-manual-fields">
+              <div class="form-group"><label>{{ form.invoice_company_name.label }}</label>{{ form.invoice_company_name }}{% if form.invoice_company_name.errors %}<ul class="errorlist">{% for e in form.invoice_company_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+              <div class="form-group"><label>{{ form.invoice_tax_id.label }}</label>{{ form.invoice_tax_id }}{% if form.invoice_tax_id.errors %}<ul class="errorlist">{% for e in form.invoice_tax_id.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+              <div class="form-group"><label>{{ form.invoice_email.label }}</label>{{ form.invoice_email }}</div>
+              <div class="form-group"><label>{{ form.invoice_phone.label }}</label>{{ form.invoice_phone }}</div>
+              <div class="form-group"><label>{{ form.invoice_street_address.label }}</label>{{ form.invoice_street_address }}</div>
+              <div class="form-group"><label>{{ form.invoice_district.label }}</label>{{ form.invoice_district }}</div>
+              <div class="form-group"><label>{{ form.invoice_city.label }}</label>{{ form.invoice_city }}</div>
+              <div class="form-group"><label>{{ form.invoice_state_region.label }}</label>{{ form.invoice_state_region }}</div>
+              <div class="form-group"><label>{{ form.invoice_postal_code.label }}</label>{{ form.invoice_postal_code }}</div>
+              <div class="form-group"><label>{{ form.invoice_country.label }}</label>{{ form.invoice_country }}</div>
+              <div class="form-group">{{ form.save_invoice_profile }} <label for="id_save_invoice_profile" style="display:inline;font-weight:400">Save this invoice profile</label></div>
+              <div class="form-group" id="invoice-title-wrap" style="display:none"><label>{{ form.invoice_profile_title.label }}</label>{{ form.invoice_profile_title }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>{{ form.payment_method.label }}</label>
+          {{ form.payment_method }}
+        </div>
+        {% if outside_work_hours %}
+        <div class="form-group">
+          <label>{{ form.confirm_out_of_hours_order.label }}</label>
+          {{ form.confirm_out_of_hours_order }}
+          {% if form.confirm_out_of_hours_order.errors %}<ul class="errorlist">{% for e in form.confirm_out_of_hours_order.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        {% endif %}
+        <div class="form-group">
+          <label>{{ form.notes.label }}</label>
+          {{ form.notes }}
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top:.5rem">Place Order</button>
+        <a href="/shop/cart/" class="btn btn-secondary" style="margin-top:.5rem">Back to Cart</a>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      function byId(id){ return document.getElementById(id); }
+      var needInvoice = byId('id_need_invoice');
+      var invoiceBox = byId('invoice-fields');
+      var invoiceSaved = byId('id_saved_invoice_profile');
+      var invoiceManual = byId('invoice-manual-fields');
+      var shippingSaved = byId('id_saved_shipping_address');
+      var shippingManual = byId('shipping-manual-fields');
+      var saveShipping = byId('id_save_shipping_address');
+      var saveInvoice = byId('id_save_invoice_profile');
+      var shippingTitleWrap = byId('shipping-title-wrap');
+      var invoiceTitleWrap = byId('invoice-title-wrap');
+
+      function refreshInvoice(){
+        if(invoiceBox){ invoiceBox.style.display = (needInvoice && needInvoice.checked) ? 'block' : 'none'; }
+        if(invoiceManual && invoiceSaved){ invoiceManual.style.display = invoiceSaved.value ? 'none' : 'block'; }
+      }
+      function refreshShipping(){
+        if(shippingManual && shippingSaved){ shippingManual.style.display = shippingSaved.value ? 'none' : 'block'; }
+      }
+      function refreshSaveToggles(){
+        if(shippingTitleWrap && saveShipping){ shippingTitleWrap.style.display = saveShipping.checked ? 'block' : 'none'; }
+        if(invoiceTitleWrap && saveInvoice){ invoiceTitleWrap.style.display = saveInvoice.checked ? 'block' : 'none'; }
+      }
+
+      if(needInvoice){ needInvoice.addEventListener('change', refreshInvoice); }
+      if(invoiceSaved){ invoiceSaved.addEventListener('change', refreshInvoice); }
+      if(shippingSaved){ shippingSaved.addEventListener('change', refreshShipping); }
+      if(saveShipping){ saveShipping.addEventListener('change', refreshSaveToggles); }
+      if(saveInvoice){ saveInvoice.addEventListener('change', refreshSaveToggles); }
+      refreshInvoice();
+      refreshShipping();
+      refreshSaveToggles();
+    })();
+  </script>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}My Messages — Kasarium{% endblock %}
+{% block content %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <h2>My Messages</h2>
+    <a href="{% url 'shop:contact_new' %}" class="btn btn-primary">+ New Message</a>
+  </div>
+  {% if contact_messages %}
+  <table>
+    <thead><tr><th>From</th><th>Subject</th><th>Date</th><th>Status</th><th>Message / Reply</th><th></th></tr></thead>
+    <tbody>
+      {% for msg in contact_messages %}
+      <tr>
+        <td>{% if msg.sent_by and msg.sent_by != user %}{{ msg.sent_by.email }}{% else %}You{% endif %}</td>
+        <td>{{ msg.subject }}</td>
+        <td>{{ msg.created_at|date:"d M Y H:i" }}</td>
+        <td>
+          {% if msg.sent_by and msg.sent_by != user and not msg.read_by_customer %}
+            <span class="btn btn-accent" style="padding:.15rem .5rem">New</span>
+          {% elif msg.reply %}
+            <span class="btn btn-success" style="padding:.15rem .5rem">Replied</span>
+          {% else %}
+            <span class="btn btn-secondary" style="padding:.15rem .5rem">Waiting</span>
+          {% endif %}
+        </td>
+        <td>
+          <details>
+            <summary>Open</summary>
+            <div style="white-space:pre-wrap;margin-top:.5rem"><strong>Message:</strong> {{ msg.body }}</div>
+            {% if msg.customer_reply %}<div style="white-space:pre-wrap;margin-top:.5rem"><strong>Your Reply:</strong> {{ msg.customer_reply }}</div>{% endif %}
+            {% if msg.reply %}<div style="white-space:pre-wrap;margin-top:.5rem"><strong>Reply:</strong> {{ msg.reply }}</div>{% endif %}
+            {% if msg.sent_by and msg.sent_by != user %}
+            <form method="post" action="{% url 'shop:contact_reply' msg.pk %}" style="margin-top:1rem">
+              {% csrf_token %}
+              <label for="customer-reply-{{ msg.pk }}">Reply to this message</label>
+              <textarea id="customer-reply-{{ msg.pk }}" name="customer_reply" rows="4" placeholder="Write your reply here...">{% if msg.customer_reply %}{{ msg.customer_reply }}{% endif %}</textarea>
+              <div style="margin-top:.5rem">
+                <button class="btn btn-accent" type="submit">Reply</button>
+              </div>
+            </form>
+            {% endif %}
+          </details>
+        </td>
+        <td>
+          <form method="post" action="{% url 'shop:contact_delete' msg.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-danger" type="submit">Hide for me</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>You have not sent any messages yet. <a href="{% url 'shop:contact_new' %}">Send one now</a>.</p>
+  {% endif %}
+</div>
+{% endblock %}

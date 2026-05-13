@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}My Profile — Kasarium{% endblock %}
+{% block content %}
+<div class="card" style="max-width:600px">
+  <h2>My Profile</h2>
+  <p style="color:#607d8b;margin-top:-.5rem;margin-bottom:1rem">{{ user.email }}</p>
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-group">
+      {{ field.label_tag }}
+      {{ field }}
+      {% if field.errors %}
+        <ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if field.help_text %}
+        <small style="color:#888">{{ field.help_text }}</small>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary" style="margin-top:.5rem">Save changes</button>
+    <a href="{% url 'shop:catalog' %}" class="btn btn-secondary" style="margin-top:.5rem;margin-left:.5rem">Cancel</a>
+  </form>
+
+  <hr style="margin:2rem 0;border:none;border-top:1px solid #eee">
+  <h3>Security</h3>
+  <p>Change your password or recover access if needed.</p>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+    <a href="{% url 'accounts:password_change' %}" class="btn btn-secondary">Change password</a>
+    <a href="{% url 'accounts:password_reset' %}" class="btn btn-secondary">Forgot password?</a>
+  </div>
+
+  <hr style="margin:2rem 0;border:none;border-top:1px solid #eee">
+  <h3 style="color:#c62828">Danger Zone</h3>
+  <p>Permanently delete your account and all associated data. This action cannot be undone.</p>
+  <a href="{% url 'accounts:delete_account' %}" class="btn btn-danger">Delete my account</a>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Products — Kasarium{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Products</h2>
+  <form method="get" style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">
+    <input name="q" value="{{ q }}" placeholder="Search barcode or name…" style="max-width:300px">
+    <select name="sort" style="width:auto">
+      <option value="name_asc" {% if sort == "name_asc" %}selected{% endif %}>Name A-Z</option>
+      <option value="name_desc" {% if sort == "name_desc" %}selected{% endif %}>Name Z-A</option>
+      <option value="price_asc" {% if sort == "price_asc" %}selected{% endif %}>Price low-high</option>
+      <option value="price_desc" {% if sort == "price_desc" %}selected{% endif %}>Price high-low</option>
+      <option value="stock_desc" {% if sort == "stock_desc" %}selected{% endif %}>Stock high-low</option>
+      <option value="stock_asc" {% if sort == "stock_asc" %}selected{% endif %}>Stock low-high</option>
+    </select>
+    <button class="btn btn-secondary" type="submit">Search</button>
+    {% if q or sort %}<a href="?" class="btn btn-secondary">Clear</a>{% endif %}
+    <a href="{% url 'catalog:product_import' %}" class="btn btn-secondary" style="margin-left:auto">Import CSV</a>
+    <a href="{% url 'catalog:product_export' %}" class="btn btn-secondary">Export CSV</a>
+    <a href="{% url 'catalog:product_create' %}" class="btn btn-primary" style="margin-left:auto">+ New Product</a>
+  </form>
+  <table>
+    <thead><tr><th>Barcode</th><th>Name</th><th>Expiration</th><th>Price</th><th>Discounted</th><th>Image</th><th>Stock</th><th>Category</th><th></th></tr></thead>
+    <tbody>
+    {% for p in products %}
+    <tr>
+      <td>{{ p.barcode }}</td>
+      <td><a href="{% url 'catalog:product_detail' p.pk %}">{{ p.name }}</a></td>
+      <td>{{ p.effective_expiration_date|default:"—" }}</td>
+      <td>€{{ p.sales_price }}</td>
+      <td>{% if p.discount_percent and p.discount_percent > 0 %}€{{ p.discounted_price|floatformat:2 }}{% else %}—{% endif %}</td>
+      <td>{% if p.image_url or p.image_data %}Yes{% else %}—{% endif %}</td>
+      <td>{{ p.stock_on_hand }}</td>
+      <td>{{ p.category|default:"—" }}</td>
+      <td>
+        <a href="{% url 'catalog:product_update' p.pk %}" class="btn btn-secondary">Edit</a>
+        <a href="{% url 'catalog:product_delete' p.pk %}" class="btn btn-danger">Delete</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="9">No products found.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if is_paginated %}
+  <div style="margin-top:1rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+    {% if page_obj.has_previous %}<a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-secondary">‹ Prev</a>{% endif %}
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    {% if page_obj.has_next %}<a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-secondary">Next ›</a>{% endif %}
+    <form method="get" style="display:flex;gap:.4rem;align-items:center;margin-left:auto">
+      {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+      {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+      <label for="jump-page" style="margin:0">Jump:</label>
+      <input id="jump-page" type="number" name="page" min="1" max="{{ page_obj.paginator.num_pages }}" style="width:100px">
+      <button class="btn btn-secondary" type="submit">Go</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

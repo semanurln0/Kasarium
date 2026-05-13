@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} — Kasarium{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>{{ product.name }}</h2>
+  <table style="max-width:600px">
+    <tr><th>Barcode</th><td>{{ product.barcode }}</td></tr>
+    <tr><th>Sales Price</th><td>€{{ product.sales_price }}</td></tr>
+    <tr><th>Category</th><td>{{ product.category|default:"—" }}</td></tr>
+    <tr><th>Origin</th><td>{{ product.origin|default:"—" }}</td></tr>
+    <tr><th>Sales Description</th><td>{{ product.sales_description|default:"—" }}</td></tr>
+    <tr><th>Website Description</th><td>{{ product.website_description|default:"—" }}</td></tr>
+    <tr><th>Created</th><td>{{ product.created_at }}</td></tr>
+  </table>
+  <div style="margin-top:1rem">
+    <a href="{% url 'catalog:product_update' product.pk %}" class="btn btn-primary">Edit</a>
+    <a href="{% url 'catalog:product_list' %}" class="btn btn-secondary">Back</a>
+  </div>
+</div>
+{% endblock %}

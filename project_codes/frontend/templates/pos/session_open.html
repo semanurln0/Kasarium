@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Open Session — POS{% endblock %}
+{% block content %}
+<div class="card" style="max-width:400px">
+  <h2>Open Shift Session</h2>
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-group">
+      <label>{{ field.label }}</label>{{ field }}
+      {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-success">Open Session</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+# Secrets (never commit)
+secrets/*.env
+
+# Generated databases & backups (never commit)
+**/*.db
+data/**/backups/
+
+# Phase 1 pipeline outputs (generated; do not commit)
+# Phase 1 pipeline outputs (generated; do not commit)
+# (kept removed per user request when committing outputs)
+
+# Generated frontend/admin assets
+staticfiles/
+
+# Test cache
+.pytest_cache/
+
+# Python
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+db.sqlite3

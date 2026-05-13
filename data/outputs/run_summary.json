@@ -1,0 +1,10 @@
+{
+  "products_total": 2955,
+  "expiration_rows_clean": 0,
+  "expiration_rows_bad": 0,
+  "expiration_dates_repaired": 0,
+  "files": {
+    "products_with_expiration": "C:\\Users\\seman\\Desktop\\ARCHIEVE\\00-WORKSPACE\\Kasarium-Constraction\\data\\outputs\\products_with_expiration.csv",
+    "bad_expiration_rows": "C:\\Users\\seman\\Desktop\\ARCHIEVE\\00-WORKSPACE\\Kasarium-Constraction\\data\\outputs\\bad_expiration_rows.csv"
+  }
+}

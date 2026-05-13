@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Kasarium{% endblock %}</title>
+<style>
+  :root{
+    --accent: #009688;
+    --dark: #1a237e; /* primary dark color used in light theme */
+    --nav-bg: var(--dark);
+    --nav-text: #fff;
+    --text: #111827;
+    --link: #e5f3ff;
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --muted: #607d8b;
+    --radius: 8px;
+    --gap: 16px;
+  }
+  *{box-sizing:border-box}
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing:antialiased }
+  nav{background:var(--nav-bg);color:var(--nav-text);padding:0.6rem 1rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100}
+  .nav-left{display:flex;align-items:center;gap:1rem}
+  .brand{font-weight:700;padding:.15rem .5rem;border-radius:6px;background:transparent;color:var(--nav-text)}
+  .nav-links{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+  .nav-links a,.nav-right a{color:var(--nav-text);text-decoration:none;padding:.25rem .45rem}
+  .nav-links a:hover{text-decoration:underline}
+  .nav-right a:hover{opacity:.92;text-decoration:underline}
+  .nav-right{margin-left:auto;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+  .nav-right .logout-link{font-weight:600}
+  .container{max-width:1100px;margin:1.5rem auto;padding:0 1rem}
+  .card{background:var(--surface);border-radius:var(--radius);padding:1rem;box-shadow:0 6px 18px rgba(22,28,40,0.06)}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:.5rem .75rem;border-bottom:1px solid #eee;text-align:left}
+  .btn{display:inline-block;padding:.45rem .9rem;border-radius:6px;border:none;cursor:pointer;text-decoration:none;font-size:.95rem;transition:transform .15s ease, filter .15s ease}
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.05)}
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline: 3px solid rgba(0,150,136,.35);
+    outline-offset: 2px;
+  }
+  .btn-primary{background:var(--dark);color:#fff}
+  .btn-accent{background:var(--accent);color:#fff}
+  .btn-danger{background:#c62828;color:#fff}
+  .btn-secondary{background:var(--muted);color:#fff}
+  .btn-success{background:#2e7d32;color:#fff}
+  input,select,textarea{width:100%;padding:.45rem;border:1px solid #e0e0e0;border-radius:6px;margin-top:.25rem}
+  label{font-weight:600;display:block;margin-top:.75rem}
+  .messages{margin-bottom:1rem}
+  .alert{padding:.6rem 1rem;border-radius:6px;margin-bottom:.5rem}
+  .alert-success{background:#e8f5e9;border-left:4px solid #2e7d32}
+  .alert-error{background:#ffebee;border-left:4px solid #c62828}
+  .alert-warning{background:#fff8e1;border-left:4px solid #f57f17}
+  .alert-info{background:#e3f2fd;border-left:4px solid #1565c0}
+  .form-group{margin-bottom:1rem}
+  .errorlist{color:#c62828;list-style:none;padding:0;margin:.25rem 0}
+
+  /* product grid defaults */
+  .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+  .product-card{display:flex;flex-direction:column;background:var(--surface);border-radius:10px;padding:1rem;overflow:hidden}
+  .product-image{width:100%;height:140px;border-radius:8px;background:linear-gradient(180deg, #f0f0f0, #e9f0ef);display:flex;align-items:center;justify-content:center;color:#9aa;font-size:1.6rem}
+  .product-meta{font-size:.85rem;color:#666;margin-top:.4rem}
+  .product-bottom{margin-top:auto;display:flex;gap:.5rem;align-items:center}
+  .product-price{font-weight:700;font-size:1.05rem}
+
+  .cart-badge{background:var(--accent);color:#fff;border-radius:999px;padding:2px 8px;font-size:.8rem;margin-left:.5rem}
+
+  /* responsive nav */
+  .hamburger{display:none;background:transparent;border:none;color:#fff;font-size:1.2rem}
+  @media (max-width:900px){
+    .nav-links{display:none;flex-direction:column;align-items:flex-start;background:rgba(9,18,40,.95);position:absolute;left:0;right:0;top:56px;padding:.75rem 1rem;gap:.4rem}
+    .hamburger{display:block}
+    .nav-right{margin-left:0;margin-right:0}
+    .container{margin:1rem auto}
+    .product-image{height:160px}
+    .user-email{display:none}
+  }
+  @media (max-width:760px){
+    .checkout-grid{grid-template-columns:1fr !important}
+    .product-detail-grid{grid-template-columns:1fr !important}
+    table{font-size:.92rem}
+    th,td{padding:.4rem .45rem}
+  }
+
+  /* sticky mobile cart */
+  .sticky-cart{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid #eee;padding:.6rem 1rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -6px 18px rgba(22,28,40,0.06)}
+
+  /* floating cart (visible on desktop) */
+  .floating-cart{position:fixed;right:18px;top:88px;background:var(--accent);color:#fff;border-radius:999px;padding:.6rem .9rem;box-shadow:0 6px 18px rgba(0,0,0,0.15);z-index:120;display:flex;align-items:center;gap:.5rem;text-decoration:none}
+  .cart-drawer{position:fixed;right:18px;top:140px;width:340px;max-width:calc(100vw - 2rem);background:var(--surface);color:var(--text);border:1px solid rgba(0,0,0,.08);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.18);z-index:119;display:none;overflow:hidden}
+  .cart-drawer.open{display:block}
+  .cart-drawer header{padding:.75rem 1rem;background:linear-gradient(180deg,var(--nav-bg),rgba(0,0,0,.05));color:var(--nav-text);display:flex;justify-content:space-between;align-items:center}
+  .cart-drawer .items{max-height:320px;overflow:auto;padding:.75rem 1rem}
+  .cart-drawer .item{display:flex;justify-content:space-between;gap:.75rem;padding:.6rem 0;border-bottom:1px solid rgba(0,0,0,.08)}
+  .cart-drawer .item:last-child{border-bottom:none}
+  .cart-drawer .meta{font-size:.86rem;color:var(--muted)}
+  .cart-drawer .total{padding:0 1rem 1rem;font-weight:700}
+  @media (max-width:900px){.floating-cart,.cart-drawer{display:none !important}}
+
+  /* skeleton */
+  .skeleton{background:linear-gradient(90deg,#eee,#f6f6f6,#eee);background-size:200% 100%;animation:shimmer 1.2s linear infinite}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  .site-footer{margin-top:2rem;background:var(--surface);border-top:1px solid #e6e6e6}
+  .site-footer .inner{max-width:1100px;margin:0 auto;padding:1rem;color:#666;font-size:.92rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+
+  .shop-banner-top,.shop-banner-bottom{border-radius:10px;padding:.8rem 1rem;margin-bottom:1rem}
+  .shop-banner-top{background:linear-gradient(90deg,#eaf8f6,#f8fbff);border:1px solid #d7eeea}
+  .shop-banner-bottom{background:linear-gradient(90deg,#fff7eb,#fff);border:1px solid #f2e3cb;margin-top:1rem}
+  /* Dark theme variables */
+  :root[data-theme="dark"]{
+    --bg:#071122;
+    --surface:#0b1220;
+    --nav-bg:#071122; /* keep nav dark in dark theme */
+    --nav-text:#e6f6f5;
+    --text:#eaf2ff;
+    --link:#d5f8ff;
+    --dark:#9ad6d0; /* accent for buttons in dark theme */
+    --muted:#9aa8b3;
+    color-scheme: dark;
+  }
+  :root[data-theme="dark"] body{color:var(--text)}
+  :root[data-theme="dark"] a{color:var(--link)}
+  :root[data-theme="dark"] .site-footer{border-top-color:#223146}
+  :root[data-theme="dark"] .shop-banner-top{background:#0f2434;border-color:#1e3e57}
+  :root[data-theme="dark"] .shop-banner-bottom{background:#1e1f22;border-color:#34373e}
+  :root[data-theme="dark"] .alert-success{background:#13321f;border-left-color:#4caf50;color:#d7ffe2}
+  :root[data-theme="dark"] .alert-error{background:#3a1717;border-left-color:#ef5350;color:#ffd7d7}
+  :root[data-theme="dark"] .alert-warning{background:#3b2f14;border-left-color:#ffca28;color:#ffefc2}
+  :root[data-theme="dark"] .alert-info{background:#122a40;border-left-color:#42a5f5;color:#d3ecff}
+</style>
+</head>
+<body>
+<nav role="navigation" aria-label="Main navigation">
+  <div class="nav-left">
+    <button class="hamburger" aria-label="Toggle menu">☰</button>
+    <div class="brand"><a href="/" style="color:inherit;text-decoration:none">Kasarium</a></div>
+    <div class="nav-links">
+      {% if not is_pos_staff %}
+        <a href="{% url 'shop:catalog' %}">🛍 Shop</a>
+      {% endif %}
+      {% if user.is_authenticated and not is_pos_staff %}
+        <a href="{% url 'shop:order_history' %}">My Orders</a>
+        <a href="{% url 'shop:contact_list' %}">✉ Messages{% if customer_unread_messages_count %} <span class="cart-badge">{{ customer_unread_messages_count }}</span>{% endif %}</a>
+      {% endif %}
+      {% if user.is_authenticated %}
+        <a href="{% url 'accounts:profile' %}">👤 My Profile</a>
+      {% endif %}
+      {% if is_pos_staff %}
+        <a href="{% url 'pos:session_open' %}" class="btn btn-secondary" style="padding:.3rem .7rem">POS</a>
+        <a href="{% url 'inventory:expiration_list' %}" class="btn btn-secondary" style="padding:.3rem .7rem">Expiry Control</a>
+        <a href="{% url 'accounts:site_settings' %}" class="btn btn-secondary" style="padding:.3rem .7rem">Settings</a>
+        <a href="{% url 'shop:admin_order_list' %}" class="btn btn-secondary" style="padding:.3rem .7rem">Orders{% if pending_orders_count %} <span class="cart-badge">{{ pending_orders_count }}</span>{% endif %}</a>
+        <a href="{% url 'shop:admin_message_list' %}" class="btn btn-secondary" style="padding:.3rem .7rem">Messages{% if unread_messages_count %} <span class="cart-badge">{{ unread_messages_count }}</span>{% endif %}</a>
+      {% endif %}
+      {% if is_admin_group %}
+        <a href="{% url 'catalog:product_list' %}" class="btn btn-secondary" style="padding:.3rem .7rem">Product Control</a>
+      {% endif %}
+      {% if is_admin_group %}
+        <a href="{% url 'accounts:admin_user_list' %}" class="btn btn-secondary" style="padding:.3rem .7rem">Users</a>
+      {% endif %}
+      {% if user.is_superuser %}
+        <a href="/admin/" class="btn btn-secondary" style="padding:.3rem .7rem">Django Admin</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="nav-right">
+    {% if user.is_authenticated %}
+      <span class="user-email">{{ user.email }}</span>
+      <a href="{% url 'accounts:logout' %}" class="logout-link">Logout</a>
+    {% else %}
+      <a href="{% url 'accounts:login' %}">Login</a>
+      <a href="{% url 'accounts:register' %}">Register</a>
+    {% endif %}
+    {% if not is_pos_staff %}
+      {% if request.resolver_match and request.resolver_match.app_name == 'shop' and request.resolver_match.url_name == 'catalog' %}
+      {% else %}
+      <a href="{% url 'shop:cart' %}" style="margin-left:8px;position:relative">Cart <span class="cart-badge" aria-hidden="true">{{ cart_count|default:0 }}</span></a>
+      {% endif %}
+    {% endif %}
+    <button id="theme-toggle" class="btn" style="margin-left:8px" aria-label="Toggle light and dark mode">🌗</button>
+  </div>
+</nav>
+{% if not is_pos_staff %}
+{% if request.resolver_match and request.resolver_match.app_name == 'shop' and request.resolver_match.url_name == 'catalog' %}
+{% else %}
+<a href="#" class="floating-cart" aria-label="Open cart" id="floating-cart-toggle">🛒 <span class="cart-badge">{{ cart_count|default:0 }}</span></a>
+<aside class="cart-drawer" id="cart-drawer" aria-label="Cart summary">
+  <header>
+    <strong>Cart</strong>
+    <button type="button" class="btn btn-secondary" id="cart-drawer-close" style="padding:.25rem .55rem">Close</button>
+  </header>
+  <div class="items" id="cart-drawer-items">
+    <div class="meta">Loading cart…</div>
+  </div>
+  <div class="total" id="cart-drawer-total"></div>
+  <div style="padding:0 1rem 1rem;display:flex;gap:.5rem;flex-wrap:wrap">
+    <a href="{% url 'shop:cart' %}" class="btn btn-primary" style="flex:1">Open cart</a>
+    <a href="{% url 'shop:checkout' %}" class="btn btn-accent" style="flex:1">Checkout</a>
+  </div>
+</aside>
+{% endif %}
+{% endif %}
+<div class="container">
+  {% if messages %}
+  <div class="messages">
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% block content %}{% endblock %}
+</div>
+<footer class="site-footer">
+  <div class="inner">
+    <div><strong>Kasarium</strong> • Open {{ site_work_hours|default:'Mon-Sat 08:00-20:00' }}</div>
+    <div>
+      Address:
+      <a href="https://www.google.com/maps/search/?api=1&query={{ site_contact_address|default:'Main Street 10, Vilnius, Lithuania'|urlencode }}" target="_blank" rel="noopener">
+        {{ site_contact_address|default:'Main Street 10, Vilnius, Lithuania' }}
+      </a>
+      • Phone:
+      <a href="tel:{{ site_contact_phone|default:'+370 600 00000' }}">{{ site_contact_phone|default:'+370 600 00000' }}</a>
+      • Email: <a href="mailto:{{ site_contact_email|default:'contact@kasarium.local' }}">{{ site_contact_email|default:'contact@kasarium.local' }}</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function(){
+    function setTheme(t){
+      if(t==='dark') document.documentElement.setAttribute('data-theme','dark');
+      else document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('kasarium_theme', t);
+    }
+
+    // init theme from localStorage or prefers-color-scheme
+    var saved = localStorage.getItem('kasarium_theme');
+    if(saved) setTheme(saved);
+    else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
+
+    function updateThemeButton(){
+      var b = document.getElementById('theme-toggle');
+      if(!b) return;
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      b.textContent = dark ? '☀️' : '🌙';
+    }
+    updateThemeButton();
+
+    var btn = document.querySelector('.hamburger');
+    if(btn){btn.addEventListener('click', function(){
+      var links = document.querySelector('.nav-links');
+      if(!links) return;
+      if(getComputedStyle(links).display === 'none') links.style.display = 'flex'; else links.style.display = 'none';
+    })}
+
+    // theme toggle button
+    var themeToggle = document.getElementById('theme-toggle');
+    if(themeToggle){
+      themeToggle.addEventListener('click', function(){
+        var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        setTheme(cur==='dark' ? 'light' : 'dark');
+        updateThemeButton();
+      });
+    }
+
+    // lightweight popup notifications for new work items
+    var staffUnread = Number("{{ unread_messages_count|default:0 }}");
+    var pendingOrders = Number("{{ pending_orders_count|default:0 }}");
+    var customerUnread = Number("{{ customer_unread_messages_count|default:0 }}");
+    if(staffUnread > 0 || pendingOrders > 0){
+      setTimeout(function(){
+        alert('Notifications: ' + pendingOrders + ' pending orders, ' + staffUnread + ' unread messages.');
+      }, 350);
+    } else if(customerUnread > 0){
+      setTimeout(function(){
+        alert('You have ' + customerUnread + ' new message(s).');
+      }, 350);
+    }
+
+    var cartToggle = document.getElementById('floating-cart-toggle');
+    var cartDrawer = document.getElementById('cart-drawer');
+    var cartDrawerClose = document.getElementById('cart-drawer-close');
+    var cartDrawerItems = document.getElementById('cart-drawer-items');
+    var cartDrawerTotal = document.getElementById('cart-drawer-total');
+    function renderCartDrawer(data){
+      if(!cartDrawerItems || !cartDrawerTotal) return;
+      if(!data.items || !data.items.length){
+        cartDrawerItems.innerHTML = '<div class="meta">Your cart is empty.</div>';
+        cartDrawerTotal.textContent = '';
+        return;
+      }
+      cartDrawerItems.innerHTML = data.items.map(function(item){
+        return '<div class="item"><div><div><strong>' + item.name + '</strong></div><div class="meta">' + (item.sales_description || '—') + '</div><div class="meta">Exp: ' + (item.expiration_date || '—') + '</div><div class="meta">Qty: ' + item.qty + '</div></div><div><strong>' + item.subtotal + ' €</strong></div></div>';
+      }).join('');
+      cartDrawerTotal.textContent = 'Total: ' + data.total + ' €';
+    }
+    function loadCartDrawer(){
+      if(!cartDrawerItems) return;
+      fetch('/shop/cart/summary/').then(function(r){ return r.json(); }).then(renderCartDrawer).catch(function(){
+        cartDrawerItems.innerHTML = '<div class="meta">Unable to load cart.</div>';
+      });
+    }
+    if(cartToggle && cartDrawer){
+      cartToggle.addEventListener('click', function(e){
+        e.preventDefault();
+        cartDrawer.classList.toggle('open');
+        if(cartDrawer.classList.contains('open')) loadCartDrawer();
+      });
+      if(cartDrawerClose){
+        cartDrawerClose.addEventListener('click', function(){ cartDrawer.classList.remove('open'); });
+      }
+    }
+
+    // lightweight popup notification for staff/admin dashboards
+    var pending = Number('{{ pending_orders_count|default:0 }}');
+    var unread = Number('{{ unread_messages_count|default:0 }}');
+    var isStaff = {{ is_pos_staff|yesno:'true,false' }};
+    if(isStaff && (pending > 0 || unread > 0)){
+      var key = 'kasarium_popup_seen_' + pending + '_' + unread;
+      if(!localStorage.getItem(key)){
+        alert('Notifications: ' + pending + ' pending orders, ' + unread + ' unread messages.');
+        localStorage.setItem(key, '1');
+      }
+    }
+  })();
+</script>
+</body>
+</html>

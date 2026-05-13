@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Sale #{{ sale.pk }} — POS{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Sale #{{ sale.pk }} <small style="font-size:.8em;color:#666">[{{ sale.status }}]</small></h2>
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+  <form method="post" style="display:flex;gap:.5rem;margin-bottom:1rem;align-items:flex-end">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add_line">
+    <div>
+      <label>Barcode</label>
+      <input name="barcode" value="{{ barcode_form.barcode.value|default:'' }}" style="width:200px">
+    </div>
+    <div>
+      <label>Qty</label>
+      <input name="qty" type="number" value="1" min="1" style="width:60px">
+    </div>
+    <button type="submit" class="btn btn-primary">Add</button>
+  </form>
+
+  <table>
+    <thead><tr><th>Barcode</th><th>Name</th><th>Price</th><th>Qty</th><th>Total</th><th></th></tr></thead>
+    <tbody>
+    {% for line in lines %}
+    <tr>
+      <td>{{ line.barcode }}</td>
+      <td>{{ line.name_snapshot }}</td>
+      <td>€{{ line.unit_price }}</td>
+      <td>{{ line.qty }}</td>
+      <td>€{{ line.line_total }}</td>
+      <td>
+        <form method="post" style="display:inline">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="remove_line">
+          <input type="hidden" name="line_id" value="{{ line.pk }}">
+          <button type="submit" class="btn btn-danger">×</button>
+        </form>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">No items yet.</td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="4"><strong>Total</strong></td><td><strong>€{{ sale.total }}</strong></td><td></td></tr>
+    </tfoot>
+  </table>
+
+  <div style="margin-top:1rem">
+    {% if lines %}
+    <a href="{% url 'pos:sale_payment' sale.pk %}" class="btn btn-success">Proceed to Payment</a>
+    {% endif %}
+    <a href="{% url 'pos:session_close' sale.session_id %}" class="btn btn-secondary">Close Session</a>
+  </div>
+</div>
+{% endblock %}

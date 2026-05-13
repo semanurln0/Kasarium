@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Login — Kasarium{% endblock %}
+{% block content %}
+<div class="card" style="max-width:400px;margin:auto">
+  <h2>Login</h2>
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-group">
+      <label>{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    {% endfor %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <button type="submit" class="btn btn-primary" style="margin-top:.5rem">Login</button>
+  </form>
+</div>
+{% endblock %}

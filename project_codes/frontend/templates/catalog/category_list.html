@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Categories — Kasarium{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Product Categories</h2>
+  <a href="{% url 'catalog:category_create' %}" class="btn btn-primary" style="margin-bottom:1rem;display:inline-block">+ New Category</a>
+  <table>
+    <thead><tr><th>Name</th><th></th></tr></thead>
+    <tbody>
+    {% for c in categories %}
+    <tr>
+      <td>{{ c.name }}</td>
+      <td>
+        <a href="{% url 'catalog:category_update' c.pk %}" class="btn btn-secondary">Edit</a>
+        <a href="{% url 'catalog:category_delete' c.pk %}" class="btn btn-danger">Delete</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="2">No categories.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

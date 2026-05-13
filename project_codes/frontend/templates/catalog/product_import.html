@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Import Products CSV — Kasarium{% endblock %}
+{% block content %}
+<div class="card" style="max-width:760px">
+  <h2>Import Products (CSV)</h2>
+  <p>Required column: <strong>barcode</strong>. Recommended: name, sales_price, sales_description, origin, category, stock_on_hand.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>CSV file</label>
+      <input type="file" name="csv_file" accept=".csv" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Import</button>
+    <a href="{% url 'catalog:product_list' %}" class="btn btn-secondary">Back</a>
+  </form>
+</div>
+{% endblock %}

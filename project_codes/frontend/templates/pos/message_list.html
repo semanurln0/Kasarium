@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}POS Messages{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>POS Messages</h2>
+  <a href="{% url 'pos_messages:message_create' %}" class="btn btn-primary" style="margin-bottom:1rem;display:inline-block">+ New Message</a>
+  <table>
+    <thead><tr><th>Title</th><th>Active</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+    {% for m in pos_messages %}
+    <tr>
+      <td>{{ m.title }}</td>
+      <td>{% if m.is_active %}✓{% else %}—{% endif %}</td>
+      <td>{{ m.created_at|date:"Y-m-d" }}</td>
+      <td>
+        <a href="{% url 'pos_messages:message_update' m.pk %}" class="btn btn-secondary">Edit</a>
+        <a href="{% url 'pos_messages:message_delete' m.pk %}" class="btn btn-danger">Delete</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4">No messages.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

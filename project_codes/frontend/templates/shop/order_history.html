@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}My Orders — Kasarium{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>My Orders</h2>
+  {% if orders %}
+  <table>
+    <thead>
+      <tr><th>Order #</th><th>Date</th><th>Status</th><th>Payment</th><th>Total</th><th></th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr {% if order.status == 'cancelled' %}style="opacity:.7"{% elif order.status == 'preparing' %}style="background:#fff9e6"{% elif order.status == 'on_courier' %}style="background:#eef6ff"{% endif %}>
+        <td>#{{ order.pk }}</td>
+        <td>{{ order.created_at|date:"d M Y H:i" }}</td>
+        <td>{{ order.get_status_display }}</td>
+        <td>{{ order.get_payment_method_display }}</td>
+        <td>{{ order.total }} €</td>
+        <td><a href="/shop/orders/{{ order.pk }}/" class="btn btn-secondary">View</a></td>
+        <td>
+          {% if order.can_cancel %}
+          <form method="post" action="{% url 'shop:order_delete' order.pk %}" onsubmit="return confirm('Cancel this order?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Cancel</button>
+          </form>
+          {% else %}
+          <span class="product-meta">Not cancellable</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>You have no orders yet. <a href="/shop/">Start shopping</a>.</p>
+  {% endif %}
+</div>
+{% endblock %}

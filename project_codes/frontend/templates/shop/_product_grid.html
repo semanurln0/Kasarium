@@ -1,0 +1,89 @@
+{# Partial: product grid and pagination for AJAX updates #}
+{% if products %}
+{% if view_mode == "table" %}
+<table>
+  <thead><tr><th>Name</th><th>Sales Description</th><th>Expiration</th><th>Price</th><th></th></tr></thead>
+  <tbody>
+    {% for product in products %}
+    <tr>
+      <td><a href="/shop/product/{{ product.pk }}/?next={{ request.get_full_path|urlencode }}">{{ product.name }}</a></td>
+      <td>{{ product.sales_description|default:"—" }}</td>
+      <td>{{ product.effective_expiration_date|default:"—" }}</td>
+      <td>
+        {% if product.discount_percent and product.discount_percent > 0 %}
+          <span style="text-decoration:line-through;color:#999">{{ product.sales_price }} €</span>
+          <strong>{{ product.discounted_price|floatformat:2 }} €</strong>
+        {% else %}
+          {{ product.sales_price }} €
+        {% endif %}
+      </td>
+      <td>
+        <form method="post" action="/shop/cart/add/{{ product.pk }}/" style="display:inline">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button type="submit" class="btn btn-accent">Add</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="product-grid">
+  {% for product in products %}
+  <div class="product-card">
+    <div class="product-image" aria-hidden="true">
+      {% if product.image_data %}
+      <img src="{{ product.image_data }}" alt="{{ product.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">
+      {% elif product.image_url %}
+      <img src="{{ product.image_url }}" alt="{{ product.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">
+      {% else %}
+      {{ product.name|slice:":1" }}
+      {% endif %}
+    </div>
+    <h3 style="margin:0 0 .4rem;font-size:1rem"><a href="/shop/product/{{ product.pk }}/?next={{ request.get_full_path|urlencode }}">{{ product.name }}</a></h3>
+    {% if product.sales_description %}<div class="product-meta">{{ product.sales_description }}</div>{% endif %}
+    <div class="product-meta">Exp: {{ product.effective_expiration_date|default:"—" }}</div>
+    <div class="product-bottom">
+      <div class="product-price">
+        {% if product.discount_percent and product.discount_percent > 0 %}
+          <span style="text-decoration:line-through;color:#999;font-size:.9rem">{{ product.sales_price }} €</span>
+          <div>{{ product.discounted_price|floatformat:2 }} €</div>
+        {% else %}
+          {{ product.sales_price }} €
+        {% endif %}
+      </div>
+      <form method="post" action="/shop/cart/add/{{ product.pk }}/" style="margin-left:auto">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit" class="btn btn-accent">Add</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if is_paginated %}
+<div style="margin-top:1.5rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+  {% if page_obj.has_previous %}
+  <a href="/shop/ajax/catalog/?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_cat %}&cat={{ selected_cat }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if view_mode %}&view={{ view_mode }}{% endif %}" class="btn btn-secondary ajax-page">← Prev</a>
+  {% endif %}
+  <span style="padding:.4rem .9rem">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+  <a href="/shop/ajax/catalog/?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_cat %}&cat={{ selected_cat }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if view_mode %}&view={{ view_mode }}{% endif %}" class="btn btn-secondary ajax-page">Next →</a>
+  {% endif %}
+  <form method="get" action="/shop/" style="display:flex;gap:.4rem;align-items:center;margin-left:auto">
+    {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+    {% if selected_cat %}<input type="hidden" name="cat" value="{{ selected_cat }}">{% endif %}
+    {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+    {% if view_mode %}<input type="hidden" name="view" value="{{ view_mode }}">{% endif %}
+    <label for="jump-page" style="margin:0">Jump:</label>
+    <input id="jump-page" type="number" name="page" min="1" max="{{ page_obj.paginator.num_pages }}" style="width:100px">
+    <button class="btn btn-secondary" type="submit">Go</button>
+  </form>
+</div>
+{% endif %}
+{% else %}
+<p>No products found.</p>
+{% endif %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}User Management — Kasarium{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>User Management</h2>
+  <form method="get" style="display:flex;gap:.5rem;margin-bottom:1rem">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search by email or name…" style="width:auto;flex:1">
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if q %}<a href="{% url 'accounts:admin_user_list' %}" class="btn btn-secondary">Clear</a>{% endif %}
+  </form>
+  <table>
+    <thead>
+      <tr><th>Email</th><th>Name</th><th>Groups</th><th>Active</th><th>Staff</th><th></th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.email }}</td>
+        <td>{{ u.first_name }} {{ u.last_name }}</td>
+        <td>{% for g in u.groups.all %}{{ g.name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
+        <td>{% if u.is_active %}✔{% else %}✘{% endif %}</td>
+        <td>{% if u.is_staff %}✔{% else %}—{% endif %}</td>
+        <td><a href="{% url 'accounts:admin_user_edit' u.pk %}" class="btn btn-secondary" style="padding:.2rem .6rem">Edit</a></td>
+        <td>
+          {% if request.user != u %}
+          <form method="post" action="{% url 'accounts:admin_user_delete' u.pk %}" onsubmit="return confirm('Delete user {{ u.email }}?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" style="padding:.2rem .6rem">Delete</button>
+          </form>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">No users found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

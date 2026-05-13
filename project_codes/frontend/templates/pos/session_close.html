@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Close Session — POS{% endblock %}
+{% block content %}
+<div class="card" style="max-width:400px">
+  <h2>Close Session #{{ session.pk }}</h2>
+  <p>Opened: {{ session.opened_at }}</p>
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-group">
+      <label>{{ field.label }}</label>{{ field }}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-danger">Close Session</button>
+    <a href="{% url 'pos:sale_new' session.pk %}" class="btn btn-secondary">Back to Sale</a>
+  </form>
+</div>
+{% endblock %}
