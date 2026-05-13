@@ -8,7 +8,7 @@ from django.contrib.auth.models import Group
 from django.urls import reverse
 
 from apps.catalog.models import Product, ProductCategory
-from apps.pos.models import ShiftSession, Sale, ReceiptTemplate, POSMessage
+from apps.pos.models import ShiftSession, Sale, SaleLine, Refund, RefundLine, ReceiptTemplate, POSMessage
 
 
 def _make_user(username, groups=(), is_superuser=False):
@@ -158,6 +158,54 @@ class POSPermissionTests(TestCase):
         self.client.login(username="staff2@test.com", password="pass")
         resp = self.client.get(reverse("pos:refund_create"))
         self.assertEqual(resp.status_code, 200)
+
+
+class POSRefundItemTests(TestCase):
+    """Refund page should support refunding specific receipt line items."""
+
+    def setUp(self):
+        self.client = Client()
+        self.staff_user = _make_user("staff_refund", groups=["Staff"])
+        self.client.login(username="staff_refund@test.com", password="pass")
+        self.product_category = ProductCategory.objects.create(name="Refund Test Category")
+        self.product = Product.objects.create(
+            barcode="9911223344",
+            name="Refund Test Item",
+            sales_price="12.50",
+            category=self.product_category,
+        )
+        self.session = ShiftSession.objects.create(opened_by=self.staff_user, opening_cash="0.00")
+        self.sale = Sale.objects.create(session=self.session, status=Sale.STATUS_PAID)
+        self.line = SaleLine.objects.create(
+            sale=self.sale,
+            product=self.product,
+            barcode=self.product.barcode,
+            name_snapshot=self.product.name,
+            unit_price=self.product.sales_price,
+            qty=2,
+        )
+
+    def test_refund_page_shows_receipt_and_creates_partial_item_refund(self):
+        resp = self.client.get(reverse("pos:refund_create") + f"?sale_id={self.sale.pk}")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Refund Test Item")
+
+        resp = self.client.post(
+            reverse("pos:refund_create"),
+            {
+                "action": "refund_lines",
+                "sale_id": self.sale.pk,
+                f"refund_qty_{self.line.pk}": "1",
+                "reason": "Damaged item",
+            },
+        )
+        self.assertIn(resp.status_code, [301, 302])
+        self.sale.refresh_from_db()
+        self.assertEqual(self.sale.status, Sale.STATUS_PARTIALLY_REFUNDED)
+        self.assertEqual(Refund.objects.filter(sale=self.sale).count(), 1)
+        refund = Refund.objects.get(sale=self.sale)
+        self.assertEqual(refund.lines.count(), 1)
+        self.assertEqual(RefundLine.objects.get(refund=refund).qty, 1)
 
 
 # ---------------------------------------------------------------------------

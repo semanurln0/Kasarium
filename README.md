@@ -4,12 +4,15 @@
 
 Kasarium combines an intuitive point-of-sale system with a web-based shop front. Manage products, process payments, track inventory, and serve customers online — all from one platform.
 
+The Kasarium logo is used as the browser tab favicon and is stored at [static/logo_kasarium.png](static/logo_kasarium.png).
+
 ## Why Kasarium?
 
 - **Fast POS:** Barcode scanning, multiple payment methods, thermal receipt printing
 - **Online Shop:** Customers browse and order from a responsive web interface
 - **Smart Inventory:** Track expiration dates, stock levels, and product variants
 - **Easy Admin:** Role-based access for owners, managers, and staff
+- **Branding:** Shared logo as the browser favicon
 - **Built for Scale:** Clean architecture ready for new features
 
 ## For Developers

@@ -4,10 +4,21 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
+from django.db.models import Sum
+from django.db.models.functions import Coalesce
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib import messages
 
-from .models import ShiftSession, Sale, SaleLine, Payment, Refund, ReceiptTemplate, POSMessage
+from .models import (
+    ShiftSession,
+    Sale,
+    SaleLine,
+    Payment,
+    Refund,
+    RefundLine,
+    ReceiptTemplate,
+    POSMessage,
+)
 from .forms import (
     OpenSessionForm, CloseSessionForm, BarcodeEntryForm,
     PaymentForm, RefundForm, ReceiptTemplateForm, POSMessageForm,
@@ -166,45 +177,128 @@ def sale_payment(request, pk):
 
 @pos_login_required
 def sale_receipt(request, pk):
-    sale = get_object_or_404(Sale, pk=pk)
-    return render(request, "pos/sale_receipt.html", {"sale": sale})
+    sale = get_object_or_404(Sale.objects.prefetch_related("lines", "refunds__lines", "refunds__lines__sale_line"), pk=pk)
+    return render(request, "pos/sale_receipt.html", {
+        "sale": sale,
+        "refunds": sale.refunds.prefetch_related("lines", "lines__sale_line").all(),
+        "refund_page_url": reverse("pos:refund_create") + f"?sale_id={sale.pk}",
+    })
+
+
+def _get_refunded_qty_map(sale):
+    refunded = {}
+    for refund in sale.refunds.prefetch_related("lines").all():
+        for refund_line in refund.lines.all():
+            refunded[refund_line.sale_line_id] = refunded.get(refund_line.sale_line_id, 0) + refund_line.qty
+    return refunded
+
+
+def _update_sale_refund_status(sale):
+    refunded_map = _get_refunded_qty_map(sale)
+    total_original = 0
+    total_remaining = 0
+    total_refunded = 0
+    for line in sale.lines.all():
+        refunded_qty = refunded_map.get(line.pk, 0)
+        total_original += line.qty
+        total_refunded += refunded_qty
+        total_remaining += max(line.qty - refunded_qty, 0)
+
+    if total_refunded <= 0:
+        return
+    if total_remaining <= 0:
+        sale.status = Sale.STATUS_REFUNDED
+    else:
+        sale.status = Sale.STATUS_PARTIALLY_REFUNDED
+    sale.save(update_fields=["status"])
 
 
 @pos_login_required
 def refund_create(request):
     sale = None
-    refund_form = None
+    sale_lines = []
+    refund_history = []
     recent_sales = (
         Sale.objects.prefetch_related("payments", "lines")
         .order_by("-created_at")[:30]
     )
+
+    sale_id = request.GET.get("sale_id") or request.POST.get("sale_id")
+    if sale_id:
+        sale = get_object_or_404(
+            Sale.objects.prefetch_related("lines", "refunds__lines"),
+            pk=sale_id,
+        )
+        refunded_map = _get_refunded_qty_map(sale)
+        for line in sale.lines.all():
+            refunded_qty = refunded_map.get(line.pk, 0)
+            sale_lines.append({
+                "line": line,
+                "refunded_qty": refunded_qty,
+                "available_qty": max(line.qty - refunded_qty, 0),
+            })
+        refund_history = sale.refunds.prefetch_related("lines", "lines__sale_line").all()
+
     if request.method == "POST":
         action = request.POST.get("action")
         if action in {"find", "select_sale"}:
             sale_id = request.POST.get("sale_id")
-            try:
-                sale = Sale.objects.get(pk=sale_id)
-                refund_form = RefundForm()
-            except Sale.DoesNotExist:
-                messages.error(request, f"Sale #{sale_id} not found.")
-        elif action == "refund":
-            sale_id = request.POST.get("sale_id")
-            sale = get_object_or_404(Sale, pk=sale_id)
-            refund_form = RefundForm(request.POST)
-            if refund_form.is_valid():
-                refund = refund_form.save(commit=False)
-                refund.sale = sale
-                refund.save()
-                sale.status = Sale.STATUS_REFUNDED
-                sale.save()
-                messages.success(request, "Refund registered.")
-                return redirect("pos:session_open")
+            if Sale.objects.filter(pk=sale_id).exists():
+                return redirect(f"{reverse('pos:refund_create')}?sale_id={sale_id}")
+            messages.error(request, f"Sale #{sale_id} not found.")
+        elif action == "refund_lines":
+            sale = get_object_or_404(
+                Sale.objects.prefetch_related("lines", "refunds__lines"),
+                pk=request.POST.get("sale_id"),
+            )
+            refunded_map = _get_refunded_qty_map(sale)
+            selected = []
+            total_amount = 0
+            reason = (request.POST.get("reason") or "").strip()
+
+            for line in sale.lines.all():
+                qty_raw = (request.POST.get(f"refund_qty_{line.pk}") or "").strip()
+                if not qty_raw:
+                    continue
+                try:
+                    qty = int(qty_raw)
+                except ValueError:
+                    messages.error(request, f"Invalid quantity for {line.name_snapshot}.")
+                    break
+                if qty <= 0:
+                    continue
+                available_qty = max(line.qty - refunded_map.get(line.pk, 0), 0)
+                if qty > available_qty:
+                    messages.error(request, f"Refund quantity for {line.name_snapshot} exceeds available quantity ({available_qty}).")
+                    break
+                selected.append((line, qty))
+                total_amount += line.unit_price * qty
+            else:
+                if not selected:
+                    messages.error(request, "Select at least one line item to refund.")
+                else:
+                    refund = Refund.objects.create(
+                        sale=sale,
+                        amount=total_amount,
+                        reason=reason,
+                    )
+                    for line, qty in selected:
+                        RefundLine.objects.create(
+                            refund=refund,
+                            sale_line=line,
+                            qty=qty,
+                            unit_price=line.unit_price,
+                        )
+                    _update_sale_refund_status(sale)
+                    messages.success(request, f"Refund registered for {len(selected)} item line(s).")
+                    return redirect("pos:sale_receipt", pk=sale.pk)
     return render(
         request,
         "pos/refund.html",
         {
             "sale": sale,
-            "refund_form": refund_form,
+            "sale_lines": sale_lines,
+            "refund_history": refund_history,
             "recent_sales": recent_sales,
         },
     )

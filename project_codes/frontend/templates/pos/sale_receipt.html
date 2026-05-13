@@ -23,8 +23,24 @@
   {% for p in sale.payments.all %}
   <p>Paid via {{ p.method }}: €{{ p.amount }}</p>
   {% endfor %}
+  {% if refunds %}
+  <hr style="margin:1rem 0">
+  <h3 style="margin-bottom:0.5rem">Refund history</h3>
+  {% for refund in refunds %}
+  <div style="margin-bottom:0.75rem;padding:0.75rem;border:1px solid #ddd;border-radius:8px">
+    <strong>€{{ refund.amount|floatformat:2 }}</strong> on {{ refund.created_at|date:"d M Y H:i" }}
+    {% if refund.reason %}<div style="margin-top:0.25rem">{{ refund.reason }}</div>{% endif %}
+    <div style="margin-top:0.25rem;font-size:0.95em;color:#666">
+      {% for line in refund.lines.all %}
+        {{ line.sale_line.name_snapshot }} x{{ line.qty }}{% if not forloop.last %}, {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
   <div style="text-align:center;margin-top:1rem">
     <a href="{% url 'pos:session_open' %}" class="btn btn-primary">New Sale</a>
+    <a href="{{ refund_page_url }}" class="btn btn-danger">Refund items from receipt</a>
   </div>
 </div>
 {% endblock %}

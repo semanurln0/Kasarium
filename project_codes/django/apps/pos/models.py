@@ -25,10 +25,12 @@ class Sale(models.Model):
     STATUS_PENDING = "pending"
     STATUS_PAID = "paid"
     STATUS_REFUNDED = "refunded"
+    STATUS_PARTIALLY_REFUNDED = "partially_refunded"
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
         (STATUS_PAID, "Paid"),
         (STATUS_REFUNDED, "Refunded"),
+        (STATUS_PARTIALLY_REFUNDED, "Partially refunded"),
     ]
 
     session = models.ForeignKey(ShiftSession, on_delete=models.PROTECT, related_name="sales")
@@ -85,6 +87,20 @@ class Refund(models.Model):
 
     def __str__(self):
         return f"Refund #{self.pk} for Sale #{self.sale_id}"
+
+
+class RefundLine(models.Model):
+    refund = models.ForeignKey(Refund, on_delete=models.CASCADE, related_name="lines")
+    sale_line = models.ForeignKey(SaleLine, on_delete=models.PROTECT, related_name="refund_lines")
+    qty = models.PositiveIntegerField()
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    @property
+    def line_total(self):
+        return self.unit_price * self.qty
+
+    def __str__(self):
+        return f"Refund line #{self.pk} for SaleLine #{self.sale_line_id} x{self.qty}"
 
 
 class ReceiptTemplate(models.Model):

@@ -1,0 +1,3 @@
+admin@kasarium.local			pass :  Admin123!
+staff@kasarium.local			pass :  Staf123!
+customer@kasarium.local			pass :  Customer123!

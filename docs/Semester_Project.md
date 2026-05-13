@@ -28,6 +28,8 @@ The project integrates the following core areas:
 - Flow management and template-based output rendering
 - Data validation and session management mechanisms
 
+Kasarium branding is now part of the shared layout: the logo appears only as the browser tab favicon, using [static/logo_kasarium.png](../static/logo_kasarium.png).
+
 ---
 
 ## 2. Project Scenario

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="card" style="max-width:600px">
   <h2>Process Refund</h2>
-  <p style="color:#666;margin-top:-.25rem">Select from recent sales or find by Sale ID.</p>
+  <p style="color:#666;margin-top:-.25rem">Select a sale, then refund specific receipt lines below.</p>
   <form method="post">
     {% csrf_token %}
     <input type="hidden" name="action" value="find">
@@ -60,20 +60,75 @@
 
   {% if sale %}
   <hr style="margin:1.5rem 0">
-  <h3>Sale #{{ sale.pk }} — Status: {{ sale.status }}</h3>
-  <p>Total: €{{ sale.total }}</p>
+  <h3>Receipt Preview — Sale #{{ sale.pk }} — Status: {{ sale.get_status_display }}</h3>
+  <p>Total: €{{ sale.total|floatformat:2 }}</p>
   <form method="post">
     {% csrf_token %}
-    <input type="hidden" name="action" value="refund">
+    <input type="hidden" name="action" value="refund_lines">
     <input type="hidden" name="sale_id" value="{{ sale.pk }}">
-    {% for field in refund_form %}
-    <div class="form-group">
-      <label>{{ field.label }}</label>{{ field }}
-      {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Ordered</th>
+          <th>Refunded</th>
+          <th>Available</th>
+          <th>Refund qty</th>
+          <th>Unit price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in sale_lines %}
+        <tr>
+          <td>{{ row.line.name_snapshot }}</td>
+          <td>{{ row.line.qty }}</td>
+          <td>{{ row.refunded_qty }}</td>
+          <td>{{ row.available_qty }}</td>
+          <td>
+            <input type="number" name="refund_qty_{{ row.line.pk }}" min="0" max="{{ row.available_qty }}" value="0" style="max-width:110px">
+          </td>
+          <td>€{{ row.line.unit_price|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="form-group" style="margin-top:1rem">
+      <label>Refund reason</label>
+      <textarea name="reason" rows="3" placeholder="Optional note for the refund"></textarea>
     </div>
-    {% endfor %}
-    <button type="submit" class="btn btn-danger">Submit Refund</button>
+    <button type="submit" class="btn btn-danger">Submit Selected Refunds</button>
   </form>
+
+  {% if refund_history %}
+  <hr style="margin:1.5rem 0">
+  <h3>Previous Refunds</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Amount</th>
+        <th>Reason</th>
+        <th>Items</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for refund in refund_history %}
+      <tr>
+        <td>{{ refund.created_at|date:"d M Y H:i" }}</td>
+        <td>€{{ refund.amount|floatformat:2 }}</td>
+        <td>{{ refund.reason|default:"-" }}</td>
+        <td>
+          {% for line in refund.lines.all %}
+            {{ line.sale_line.name_snapshot }} x{{ line.qty }}{% if not forloop.last %}, {% endif %}
+          {% empty %}
+            -
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
   {% endif %}
 </div>
 {% endblock %}
