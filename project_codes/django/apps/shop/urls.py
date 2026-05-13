@@ -22,6 +22,7 @@ urlpatterns = [
     # Customer: contact messages
     path("contact/", views.contact_list_view, name="contact_list"),
     path("contact/new/", views.contact_new_view, name="contact_new"),
+    path("contact/<int:pk>/", views.contact_detail_view, name="contact_detail"),
     path("contact/<int:pk>/delete/", views.contact_delete_view, name="contact_delete"),
     path("contact/<int:pk>/reply/", views.contact_reply_view, name="contact_reply"),
     # Admin: view customer messages

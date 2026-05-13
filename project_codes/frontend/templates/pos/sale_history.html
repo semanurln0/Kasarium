@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Sale History — POS{% endblock %}
+{% block content %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+    <h2 style="margin:0">Sale History</h2>
+    <a href="{% url 'pos:session_open' %}" class="btn btn-secondary">← Back to POS</a>
+  </div>
+
+  <!-- Summary Stats -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem">
+    <div class="card" style="background:var(--surface);text-align:center">
+      <p style="margin:0;color:#999;font-size:0.9rem">Sales Today</p>
+      <p style="margin:0.5rem 0;font-size:1.8rem;font-weight:bold">{{ sales_today }}</p>
+    </div>
+    <div class="card" style="background:var(--surface);text-align:center">
+      <p style="margin:0;color:#999;font-size:0.9rem">Total Today</p>
+      <p style="margin:0.5rem 0;font-size:1.8rem;font-weight:bold">€{{ total_sales_today|floatformat:2 }}</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" style="display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:flex-end">
+    <div>
+      <label style="display:block;font-size:0.9rem;margin-bottom:0.25rem">From Date</label>
+      <input type="date" name="date_from" value="{{ request.GET.date_from }}" style="width:150px">
+    </div>
+    <div>
+      <label style="display:block;font-size:0.9rem;margin-bottom:0.25rem">To Date</label>
+      <input type="date" name="date_to" value="{{ request.GET.date_to }}" style="width:150px">
+    </div>
+    <div>
+      <label style="display:block;font-size:0.9rem;margin-bottom:0.25rem">Status</label>
+      <select name="status" style="width:150px">
+        <option value="">All Statuses</option>
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Filter</button>
+    {% if request.GET.date_from or request.GET.date_to or request.GET.status %}
+    <a href="?" class="btn btn-secondary">Clear</a>
+    {% endif %}
+  </form>
+
+  <!-- Sales Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Sale ID</th>
+        <th>Items</th>
+        <th>Total (€)</th>
+        <th>Payment</th>
+        <th>Status</th>
+        <th>Date & Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sale in sales %}
+      <tr>
+        <td><strong>#{{ sale.pk }}</strong></td>
+        <td>
+          <small>
+            {% for line in sale.lines.all %}
+            {{ line.name_snapshot }} x{{ line.qty }}<br>
+            {% endfor %}
+          </small>
+        </td>
+        <td><strong>{{ sale.total|floatformat:2 }}</strong></td>
+        <td>
+          {% for payment in sale.payments.all %}
+          {{ payment.get_method_display }}<br>
+          {% endfor %}
+        </td>
+        <td>
+          {% if sale.status == 'completed' %}
+          <span class="btn btn-success" style="padding:.15rem .5rem;font-size:0.9rem">Completed</span>
+          {% elif sale.status == 'pending' %}
+          <span class="btn btn-secondary" style="padding:.15rem .5rem;font-size:0.9rem">Pending</span>
+          {% elif sale.status == 'refunded' %}
+          <span class="btn btn-danger" style="padding:.15rem .5rem;font-size:0.9rem">Refunded</span>
+          {% else %}
+          <span class="btn btn-secondary" style="padding:.15rem .5rem;font-size:0.9rem">{{ sale.get_status_display }}</span>
+          {% endif %}
+        </td>
+        <td>{{ sale.created_at|date:"d M Y H:i" }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" style="text-align:center;padding:2rem">No sales found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Pagination -->
+  {% if is_paginated %}
+  <div style="margin-top:1rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="btn btn-secondary">‹ Prev</a>
+    {% endif %}
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="btn btn-secondary">Next ›</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -135,6 +135,31 @@ class ContactMessage(models.Model):
         return f"Message from {self.user} — {self.subject}"
 
 
+class ContactMessageEntry(models.Model):
+    """Single chat entry attached to a contact message thread."""
+
+    message = models.ForeignKey(
+        ContactMessage,
+        on_delete=models.CASCADE,
+        related_name="chat_entries",
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="contact_message_entries",
+    )
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+
+    def __str__(self):
+        return f"Entry #{self.pk} for Message #{self.message_id}"
+
+
 class SavedShippingAddress(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

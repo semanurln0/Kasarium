@@ -39,5 +39,5 @@ class CustomUserAdmin(BaseUserAdmin):
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
-    list_display = ("work_hours", "contact_phone", "contact_email", "shipment_price", "updated_at")
+    list_display = ("work_hours", "timezone", "contact_phone", "contact_email", "shipment_price", "updated_at")
     readonly_fields = ("updated_at",)

@@ -174,9 +174,13 @@ def sale_receipt(request, pk):
 def refund_create(request):
     sale = None
     refund_form = None
+    recent_sales = (
+        Sale.objects.prefetch_related("payments", "lines")
+        .order_by("-created_at")[:30]
+    )
     if request.method == "POST":
         action = request.POST.get("action")
-        if action == "find":
+        if action in {"find", "select_sale"}:
             sale_id = request.POST.get("sale_id")
             try:
                 sale = Sale.objects.get(pk=sale_id)
@@ -195,7 +199,15 @@ def refund_create(request):
                 sale.save()
                 messages.success(request, "Refund registered.")
                 return redirect("pos:session_open")
-    return render(request, "pos/refund.html", {"sale": sale, "refund_form": refund_form})
+    return render(
+        request,
+        "pos/refund.html",
+        {
+            "sale": sale,
+            "refund_form": refund_form,
+            "recent_sales": recent_sales,
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -262,4 +274,57 @@ class POSMessageDeleteView(AdminOrSuperuserMixin, DeleteView):
     model = POSMessage
     template_name = "pos/message_confirm_delete.html"
     success_url = reverse_lazy("pos_messages:message_list")
+
+
+# ---------------------------------------------------------------------------
+# Sale History
+# ---------------------------------------------------------------------------
+
+class SaleHistoryView(POSAccessMixin, ListView):
+    """View all completed sales with filtering and summary statistics."""
+    model = Sale
+    template_name = "pos/sale_history.html"
+    context_object_name = "sales"
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = Sale.objects.prefetch_related('lines').order_by('-created_at')
+        
+        # Filter by date range
+        date_from = self.request.GET.get('date_from')
+        date_to = self.request.GET.get('date_to')
+        
+        if date_from:
+            try:
+                from datetime import datetime
+                qs = qs.filter(created_at__date__gte=datetime.strptime(date_from, "%Y-%m-%d").date())
+            except:
+                pass
+        
+        if date_to:
+            try:
+                from datetime import datetime
+                qs = qs.filter(created_at__date__lte=datetime.strptime(date_to, "%Y-%m-%d").date())
+            except:
+                pass
+        
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(status=status)
+        
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        
+        # Summary statistics
+        today = timezone.now().date()
+        ctx['sales_today'] = Sale.objects.filter(created_at__date=today).count()
+        ctx['total_sales_today'] = sum(
+            s.total for s in Sale.objects.filter(created_at__date=today)
+        )
+        ctx['status_choices'] = Sale.STATUS_CHOICES
+        
+        return ctx
 

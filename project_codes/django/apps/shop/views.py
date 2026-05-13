@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import AccessMixin
 from django.conf import settings
 from django.http import JsonResponse
+from django.db.utils import OperationalError, ProgrammingError
 from django.db.models import DateField, OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
@@ -28,7 +29,14 @@ from .forms import (
     ContactMessageForm,
     ContactReplyForm,
 )
-from .models import ContactMessage, Order, OrderLine, SavedInvoiceProfile, SavedShippingAddress
+from .models import (
+    ContactMessage,
+    ContactMessageEntry,
+    Order,
+    OrderLine,
+    SavedInvoiceProfile,
+    SavedShippingAddress,
+)
 
 CART_SESSION_KEY = "shop_cart"
 User = get_user_model()
@@ -58,6 +66,69 @@ def _require_customer_user(request):
         messages.info(request, "Customer shop pages are disabled for staff/admin accounts.")
         return redirect("pos:session_open")
     return None
+
+
+def _build_contact_thread(msg):
+    """Build a chronological thread including legacy fields and chat entries."""
+    thread = []
+    chat_entries = None
+
+    try:
+        chat_entries = list(msg.chat_entries.select_related("sender").all())
+    except (ProgrammingError, OperationalError):
+        # Fallback for databases where the new table hasn't been migrated yet.
+        chat_entries = None
+
+    if chat_entries is not None and chat_entries:
+        for entry in chat_entries:
+            sender = entry.sender
+            sender_is_staff = _is_staff_or_admin(sender)
+            thread.append({
+                "author_type": "staff" if sender_is_staff else "customer",
+                "is_staff": sender_is_staff,
+                "sender_id": getattr(sender, "id", None),
+                "sender_label": getattr(sender, "email", "Support Team") if sender else "Support Team",
+                "body": entry.body,
+                "created_at": entry.created_at,
+                "sequence": len(thread),
+            })
+    else:
+        root_sender = msg.sent_by or msg.user
+        root_is_staff = _is_staff_or_admin(root_sender)
+        thread.append({
+            "author_type": "staff" if root_is_staff else "customer",
+            "is_staff": root_is_staff,
+            "sender_id": getattr(root_sender, "id", None),
+            "sender_label": getattr(root_sender, "email", "Support Team") if root_sender else "Support Team",
+            "body": msg.body,
+            "created_at": msg.created_at,
+            "sequence": len(thread),
+        })
+
+        if msg.reply:
+            thread.append({
+                "author_type": "staff",
+                "is_staff": True,
+                "sender_id": getattr(msg.replied_by, "id", None),
+                "sender_label": getattr(msg.replied_by, "email", "Support Team") if msg.replied_by else "Support Team",
+                "body": msg.reply,
+                "created_at": msg.replied_at or msg.created_at,
+                "sequence": len(thread),
+            })
+
+        if msg.customer_reply:
+            thread.append({
+                "author_type": "customer",
+                "is_staff": False,
+                "sender_id": getattr(msg.customer_replied_by, "id", getattr(msg.user, "id", None)),
+                "sender_label": getattr(msg.customer_replied_by, "email", getattr(msg.user, "email", "Customer")),
+                "body": msg.customer_reply,
+                "created_at": msg.customer_replied_at or msg.created_at,
+                "sequence": len(thread),
+            })
+
+    thread.sort(key=lambda item: (item["created_at"], item.get("sequence", 0)))
+    return thread
 
 
 _WEEKDAY_INDEX = {
@@ -743,18 +814,41 @@ def contact_reply_view(request, pk):
         return blocked
     msg = get_object_or_404(ContactMessage, pk=pk, user=request.user, deleted_for_customer=False)
     if request.method != "POST":
-        return redirect("shop:contact_list")
-    form = ContactCustomerReplyForm(request.POST, instance=msg)
-    if form.is_valid():
-        reply = form.save(commit=False)
-        reply.customer_replied_by = request.user
-        reply.customer_replied_at = timezone.now()
-        reply.read_by_customer = True
-        reply.save()
+        return redirect("shop:contact_detail", pk=msg.pk)
+
+    customer_text = (request.POST.get("customer_reply") or "").strip()
+    if customer_text:
+        ContactMessageEntry.objects.create(
+            message=msg,
+            sender=request.user,
+            body=customer_text,
+        )
+        msg.customer_reply = customer_text
+        msg.customer_replied_by = request.user
+        msg.customer_replied_at = timezone.now()
+        msg.read_by_customer = True
+        msg.is_read = False
+        msg.save(update_fields=["customer_reply", "customer_replied_by", "customer_replied_at", "read_by_customer", "is_read"])
         messages.success(request, "Reply sent.")
     else:
         messages.error(request, "Please write a reply before sending.")
-    return redirect("shop:contact_list")
+    return redirect("shop:contact_detail", pk=msg.pk)
+
+
+@login_required
+def contact_detail_view(request, pk):
+    blocked = _require_customer_user(request)
+    if blocked:
+        return blocked
+    msg = get_object_or_404(ContactMessage, pk=pk, user=request.user, deleted_for_customer=False)
+    if not msg.read_by_customer:
+        msg.read_by_customer = True
+        msg.save(update_fields=["read_by_customer"])
+    thread_messages = []
+    for item in _build_contact_thread(msg):
+        item["direction"] = "outgoing" if item.get("sender_id") == request.user.id else "incoming"
+        thread_messages.append(item)
+    return render(request, "shop/contact_detail.html", {"msg": msg, "thread_messages": thread_messages})
 
 
 # ---------------------------------------------------------------------------
@@ -812,22 +906,32 @@ class AdminMessageDetailView(AdminRequiredMixin, DetailView):
             messages.success(request, "Message deleted.")
             return redirect("shop:admin_message_list")
 
-        form = ContactReplyForm(request.POST, instance=obj)
-        if form.is_valid():
-            reply = form.save(commit=False)
-            reply.replied_by = request.user
-            from django.utils import timezone
-            reply.replied_at = timezone.now()
-            reply.is_read = True
-            reply.read_by_customer = False
-            reply.save()
+        reply_text = (request.POST.get("reply") or "").strip()
+        if reply_text:
+            ContactMessageEntry.objects.create(
+                message=obj,
+                sender=request.user,
+                body=reply_text,
+            )
+            obj.reply = reply_text
+            obj.replied_by = request.user
+            obj.replied_at = timezone.now()
+            obj.is_read = True
+            obj.read_by_customer = False
+            obj.save(update_fields=["reply", "replied_by", "replied_at", "is_read", "read_by_customer"])
             messages.success(request, "Reply sent.")
             return redirect("shop:admin_message_detail", pk=obj.pk)
-        return render(request, self.template_name, {"msg": obj, "form": form})
+        messages.error(request, "Please write a reply before sending.")
+        return render(request, self.template_name, {"msg": obj, "form": ContactReplyForm(instance=obj)})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["form"] = ContactReplyForm(instance=self.object)
+        thread_messages = []
+        for item in _build_contact_thread(self.object):
+            item["direction"] = "outgoing" if item.get("is_staff") else "incoming"
+            thread_messages.append(item)
+        context["thread_messages"] = thread_messages
         return context
 
     def get(self, request, *args, **kwargs):

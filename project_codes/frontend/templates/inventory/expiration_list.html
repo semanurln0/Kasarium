@@ -17,7 +17,7 @@
     <thead><tr><th>Product</th><th>Barcode</th><th>Expiration Date</th><th>Raw Value</th><th>Source</th></tr></thead>
     <tbody>
     {% for p in products %}
-    <tr {% if p.expiration_tone == 'expired' %}style="background:#ffe5e5"{% elif p.expiration_tone == 'warning' %}style="background:#fff7df"{% endif %}>
+    <tr {% if p.expiration_tone == 'expired' %}style="border-left:5px solid #d32f2f;background:linear-gradient(90deg, rgba(211,47,47,0.08) 0%, transparent 100%)"{% elif p.expiration_tone == 'warning' %}style="border-left:5px solid #f57c00;background:linear-gradient(90deg, rgba(245,124,0,0.08) 0%, transparent 100%)"{% endif %}>
       <td>{{ p.name }}</td>
       <td>{{ p.barcode }}</td>
       <td>{{ p.effective_expiration_value|default:p.effective_expiration_date|default:"—" }}</td>

@@ -3,6 +3,7 @@
 {% block content %}
 <div class="card" style="max-width:600px">
   <h2>Process Refund</h2>
+  <p style="color:#666;margin-top:-.25rem">Select from recent sales or find by Sale ID.</p>
   <form method="post">
     {% csrf_token %}
     <input type="hidden" name="action" value="find">
@@ -12,6 +13,50 @@
     </div>
     <button type="submit" class="btn btn-primary">Find Sale</button>
   </form>
+
+  <hr style="margin:1.5rem 0">
+  <h3 style="margin-top:0">Recent Sales</h3>
+  <div style="overflow:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Sale</th>
+          <th>Date</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Payment</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in recent_sales %}
+        <tr>
+          <td>#{{ item.pk }}</td>
+          <td>{{ item.created_at|date:"d M Y H:i" }}</td>
+          <td>€{{ item.total|floatformat:2 }}</td>
+          <td>{{ item.get_status_display }}</td>
+          <td>
+            {% for payment in item.payments.all %}
+              {{ payment.get_method_display }}{% if not forloop.last %}, {% endif %}
+            {% empty %}
+              -
+            {% endfor %}
+          </td>
+          <td>
+            <form method="post" style="display:inline">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="select_sale">
+              <input type="hidden" name="sale_id" value="{{ item.pk }}">
+              <button type="submit" class="btn btn-secondary">Select</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">No sales found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
   {% if sale %}
   <hr style="margin:1.5rem 0">

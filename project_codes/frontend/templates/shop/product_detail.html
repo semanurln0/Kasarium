@@ -2,7 +2,7 @@
 {% block title %}{{ product.name }} — Kasarium{% endblock %}
 {% block content %}
 <div class="card">
-  <a href="{{ next_url }}" class="btn btn-secondary" style="margin-bottom:1rem">← Back to Shop</a>
+  <a href="{{ next_url|default:'/shop/' }}" class="btn btn-secondary" style="margin-bottom:1rem">← Back to Shop</a>
   <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:1rem" class="product-detail-grid">
     <div class="product-image" aria-hidden="true" style="height:260px">
       {% if product.image_data %}
@@ -10,7 +10,7 @@
       {% elif product.image_url %}
       <img src="{{ product.image_url }}" alt="{{ product.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">
       {% else %}
-      {{ product.name|slice:":1" }}
+      <img src="/static/default_product.png" alt="No image" style="width:100%;height:100%;object-fit:cover;border-radius:8px;opacity:.6" onerror="this.style.display='none'">
       {% endif %}
     </div>
     <div>

@@ -18,7 +18,7 @@ def user_roles(request):
 
 
 def site_settings(request):
-    """Inject site settings (work hours, contact info, shipment price) into templates."""
+    """Inject site settings (work hours, timezone, contact info, shipment price) into templates."""
     from .models import SiteSettings
 
     try:
@@ -27,6 +27,7 @@ def site_settings(request):
         return {}
     return {
         "site_work_hours": s.work_hours,
+        "site_timezone": s.timezone,
         "site_contact_phone": s.contact_phone,
         "site_contact_email": s.contact_email,
         "site_contact_address": s.contact_address,

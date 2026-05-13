@@ -11,6 +11,7 @@ urlpatterns = [
     path("sale/<int:pk>/payment/", views.sale_payment, name="sale_payment"),
     path("sale/<int:pk>/receipt/", views.sale_receipt, name="sale_receipt"),
     path("refund/", views.refund_create, name="refund_create"),
+    path("sales/", views.SaleHistoryView.as_view(), name="sale_history"),
     path("receipts/", views.ReceiptTemplateListView.as_view(), name="receipt_list"),
     path("receipts/new/", views.ReceiptTemplateCreateView.as_view(), name="receipt_create"),
     path("receipts/<int:pk>/edit/", views.ReceiptTemplateUpdateView.as_view(), name="receipt_update"),

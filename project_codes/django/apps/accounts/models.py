@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
+from django.core.exceptions import ValidationError
 from django.db import models
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 class CustomUserManager(BaseUserManager):
@@ -59,6 +61,7 @@ class SiteSettings(models.Model):
     """
 
     work_hours = models.CharField(max_length=200, default="Mon-Sat 08:00-20:00", help_text="Human readable work hours")
+    timezone = models.CharField(max_length=64, default="Europe/Vilnius", help_text="IANA timezone name, e.g. Europe/Vilnius")
     contact_phone = models.CharField(max_length=50, blank=True, default="+370 600 00000")
     contact_email = models.EmailField(blank=True, default="contact@kasarium.local")
     contact_address = models.CharField(max_length=255, blank=True, default="Main Street 10, Vilnius, Lithuania")
@@ -71,6 +74,13 @@ class SiteSettings(models.Model):
 
     def __str__(self):
         return "Site settings"
+
+    def clean(self):
+        super().clean()
+        try:
+            ZoneInfo(self.timezone)
+        except ZoneInfoNotFoundError as exc:
+            raise ValidationError({"timezone": f"Unknown timezone: {self.timezone}"}) from exc
 
     @classmethod
     def get_solo(cls):

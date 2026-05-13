@@ -14,6 +14,7 @@
 - [X] Staff and customers see the correct navigation for their role.
 - [X] Cart visibility is adjusted for staff and admin views so they do not see shop-only cart UI.
 - [X] Order history and order detail show the right status-based controls.
+- [ ] Refunds system should be improved (no option for choosing only one item from sale? maybe can be shown receipt once again and it can be refunding from seleccting in there)
 
 ## Products and Inventory
 

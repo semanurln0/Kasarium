@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Message from {{ msg.user.email }} — Kasarium{% endblock %}
+{% block title %}{{ msg.subject }} — Kasarium{% endblock %}
 {% block content %}
 <style>
   .chat-container {
@@ -122,15 +122,15 @@
 </style>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-  <a href="{% url 'shop:admin_message_list' %}" class="btn btn-secondary">← Back to Messages</a>
-  <h2 style="margin: 0;">{{ msg.user.email }}</h2>
+  <a href="{% url 'shop:contact_list' %}" class="btn btn-secondary">← Back to Messages</a>
+  <h2 style="margin: 0;">{{ msg.subject }}</h2>
   <div></div>
 </div>
 
 <div class="chat-container">
   <div class="chat-header">
     <h3 style="margin: 0; font-size: 1rem;">{{ msg.subject }}</h3>
-    <small>Customer: {{ msg.user.email }}</small>
+    <small>Staff: {{ msg.sent_by.email|default:"Support Team" }}</small>
   </div>
 
   <div class="chat-messages">
@@ -147,19 +147,18 @@
   </div>
 
   <!-- Input area -->
-  <form method="post" class="chat-input-area">
+  <form method="post" action="{% url 'shop:contact_reply' msg.pk %}" class="chat-input-area" style="border-top: 1px solid #ddd;">
     {% csrf_token %}
-    <textarea name="reply" rows="3" placeholder="Type your message..." style="flex: 1; border-radius: 20px; padding: 0.75rem 1rem;"></textarea>
+    <textarea name="customer_reply" rows="3" placeholder="Type your message..." style="flex: 1; border-radius: 20px; padding: 0.75rem 1rem;"></textarea>
     <button type="submit" class="btn btn-accent" style="align-self: flex-end;">Send</button>
   </form>
 </div>
 
 <div class="chat-footer">
-  <form method="post" style="display: inline;" onsubmit="return confirm('Hide this message for staff?')">
+  <form method="post" action="{% url 'shop:contact_delete' msg.pk %}" style="display: inline;" onsubmit="return confirm('Hide this message from your inbox?')">
     {% csrf_token %}
-    <input type="hidden" name="action" value="delete">
-    <button class="btn btn-danger" type="submit">Hide for staff</button>
+    <button class="btn btn-danger" type="submit">Hide Message</button>
   </form>
-  <a href="{% url 'shop:admin_message_list' %}" class="btn btn-secondary">Back to List</a>
+  <a href="{% url 'shop:contact_list' %}" class="btn btn-secondary">Back to List</a>
 </div>
 {% endblock %}

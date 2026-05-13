@@ -140,9 +140,10 @@ class SiteSettingsForm(forms.ModelForm):
         from .models import SiteSettings
 
         model = SiteSettings
-        fields = ("work_hours", "contact_phone", "contact_email", "contact_address", "shipment_price")
+        fields = ("work_hours", "timezone", "contact_phone", "contact_email", "contact_address", "shipment_price")
         widgets = {
             "work_hours": forms.TextInput(),
+            "timezone": forms.TextInput(attrs={"placeholder": "Europe/Vilnius"}),
             "contact_phone": forms.TextInput(),
             "contact_email": forms.EmailInput(),
             "contact_address": forms.TextInput(),
