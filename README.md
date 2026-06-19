@@ -398,6 +398,39 @@ Refund (Image 4 inspired):
 - Django backend scaffold + settings
 - Core database models + migrations
 - Role-based access (Admin / Staff / Customer) and permissions
+
+---
+
+**Environment Setup**
+
+- **Create virtualenv (Windows PowerShell)**:
+
+  ```powershell
+  python -m venv .venv
+  . .venv\Scripts\Activate.ps1
+  python -m pip install --upgrade pip
+  pip install -r requirements.txt
+  ```
+
+- **Create virtualenv (macOS / Linux)**:
+
+  ```bash
+  python3 -m venv .venv || python -m venv .venv
+  source .venv/bin/activate
+  python -m pip install --upgrade pip
+  pip install -r requirements.txt
+  ```
+
+- **One-command helpers** (already added to the repo):
+
+  - PowerShell: `scripts/setup_environment.ps1`
+  - Bash: `scripts/setup_environment.sh`
+
+- **Environment file**: copy `.env.example` to `.env` and fill secrets.
+
+- **Ignored files**: a `.gitignore` has been added to ignore `.venv`, `.env`, caches, and editor folders.
+
+If you want, I can run the installer locally now (will install packages into the active Python environment). Otherwise run the appropriate script for your OS.
 - Data preparation + merge pipeline (products + expiration merge, import to DB)
 
 ### Phase 2 — Frontend (excluding Online Shop)
